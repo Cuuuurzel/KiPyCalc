@@ -205,6 +205,7 @@ class CucuKeyboard( BoxLayout ) :
                 self.current.text = self.current.text[:-1]
         elif command == "subs units of measure" :
             self.current.text += ".subs( { p:10**(-12), n:10**(-9), u:10**(-6), m:10**(-3), K:10**3, M:10**6, G:10**9, P:10**12 } )"
+#"textnav" block
 #!!!
         elif command == "<-" : 
             print( "Not yet implemented" )
@@ -213,8 +214,6 @@ class CucuKeyboard( BoxLayout ) :
         elif command == "var" : 
             print( "Not yet implemented" )
         elif command == "def" : 
-            print( "Not yet implemented" )
-        elif command == "ANS" : 
             print( "Not yet implemented" )
 #!!!
         #all the rest...

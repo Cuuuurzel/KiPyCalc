@@ -1015,6 +1015,17 @@ class EvalfMixin(object):
 
         """
 
+        #Unit of measure handling
+        subs[p] = 10**(-12)
+        subs[n] = 10**(-9)
+        subs[u] = 10**(-6)
+        subs[m = 10**(-3)
+        subs[K] = 10**(3)
+        subs[M] = 10**(6)
+        subs[G] = 10**(9)
+        subs[P] = 10**(12)
+
+
         if not evalf_table:
             _create_evalf_table()
         prec = dps_to_prec(n)
