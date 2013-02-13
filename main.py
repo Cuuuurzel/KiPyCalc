@@ -78,8 +78,9 @@ class CucuKeyboard( BoxLayout ) :
         inp.size_hint = 1, 0.25
         self.add_widget( inp )
 
-        self.textbar = BoxLayout( orientation="horizontal" )
-        self.parbar = BoxLayout( orientation="horizontal" )
+        """
+        self.textbar = GridLayout( cols=5 )
+        self.parbar = GridLayout( cols=5 )
         self.numpad = GridLayout( cols=5 )
         self.operators = GridLayout( cols=5 )
         self.functions = GridLayout( cols=5 )
@@ -90,7 +91,6 @@ class CucuKeyboard( BoxLayout ) :
         self.functions.padding = 1
         self.operators.padding = 1
         
-        """  
         r = 9.0
         self.textbar.size_hint = 1, 1/r 
         self.parbar.size_hint = 1, 1/r 
@@ -99,12 +99,13 @@ class CucuKeyboard( BoxLayout ) :
         self.operators.size_hint = 1, 2/r
         """
 
-        self.keys = { "textbar" :   { "<-"  : [ "<-", "<-", "<-" ], \
-                                      "del" : [ "del", "del", "del" ], \
+        self.keys = { "textnav" :   { "<-"  : [ "<-", "<-", "<-" ], \
+                                      "->"  : [ "->", "->", "->" ] },
+
+                      "textedit" :  { "del" : [ "del", "del", "del" ], \
                                       "_"   : [ "_", "_", "_" ], \
                                       "\\n" : [ "\\n", "\\n", "\\n" ], \
-                                      "\\t" : [ "\\t", "\\t", "\\t" ], \
-                                      "->"  : [ "->", "->", "->" ] },
+                                      "\\t" : [ "\\t", "\\t", "\\t" ] },
 
                       "parbar" :    { "(" : [ "(", "(", "(" ], \
                                       ")" : [ ")", ")", ")" ], \
@@ -124,13 +125,14 @@ class CucuKeyboard( BoxLayout ) :
                                       "8"  : [ "8", "8", "8" ], \
                                       "9"  : [ "9", "9", "9" ], \
                                       "0"  : [ "0", "0", "0" ], \
-                                      "."  : [ ".", ".", "." ], \
-                                      "I"  : [ "I", "I", "I" ], \
+                                      "."  : [ ".", ".", "." ] },
+
+                      "consts" :    { "I"  : [ "I", "I", "I" ], \
                                       "E"  : [ "E", "E", "E" ], \
                                       u"∏" : [ u"∏", u"∏", u"∏" ] },
 
-                      "operators" : { "ANS"   : [ "(", "(", "(" ], \
-                                      "evalf" : [ ")", ")", ")" ], \
+                      "operators" : { "ANS"   : [ "ANS", "ANS", "ANS" ], \
+                                      "evalf" : [ "evalf", "evalf", "evalf" ], \
                                       "="     : [ "=", "=", "=" ], \
                                       "+"     : [ "+", "+", "+" ], \
                                       "-"     : [ "-", "-", "-" ], \
@@ -150,14 +152,9 @@ class CucuKeyboard( BoxLayout ) :
 
                     }
 
-        self.kb = GridLayout( cols=6 ) #BoxLayout( orientation="horizontal" )
-        tkb = BoxLayout( orientation="vertical" )
-        tkb.add_widget( self.operators )
-        tkb.add_widget( self.numpad )
-        tkb.add_widget( self.functions )
-        tkb.add_widget( self.parbar )
-        tkb.add_widget( self.textbar )
-        self.kb.add_widget( tkb )
+        #self.kb = BoxLayout( orientation="vertical" )
+        self.kb = GridLayout( cols=6 )
+        self.kb.padding = 1
         self.add_widget( self.kb )
         self.shiftCount = -1
         self.onShift()
@@ -166,16 +163,6 @@ class CucuKeyboard( BoxLayout ) :
         self.shiftCount += 1
         if self.shiftCount == 3 : self.shiftCount = 0
 
-        self.kb.clear_widgets()
-
-        """
-        self.functions.clear_widgets()
-        self.numpad.clear_widgets()
-        self.operators.clear_widgets()
-        self.parbar.clear_widgets()
-        self.textbar.clear_widgets()
-        """
-
         for key in self.keys.keys() :
             keySet = self.keys[ key ]
             for keyName in keySet.keys() :
@@ -183,8 +170,8 @@ class CucuKeyboard( BoxLayout ) :
                 btn = Button( text=caption )
                 btn.bind( on_press=self.onBtnPress ) 
                 btn.font_size = 18
-                self.kb.add_widget( btn )
-
+                self.kb.add_widget( btn )  
+  
     def onBtnPress( self, instance ) :
         command = instance.text
         toInsert = ""
