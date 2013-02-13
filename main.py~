@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from code import compile_command, InteractiveConsole
+from code import InteractiveConsole
 import sys
 import kivy
 from kivy.app import App
@@ -14,7 +14,6 @@ from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
 
-kivy.require( '1.1.2' )
 Builder.load_file( "kipycalc.kv" )
 
 class PyShell( BoxLayout ) :
@@ -26,6 +25,7 @@ class PyShell( BoxLayout ) :
         self.listed.font_name = "font/ubuntu-mono/UbuntuMono-R.ttf"
         self.listed.readonly = True
         self.listed.size_hint = 1, 0.2
+        self.listed.font_size = 18
         self.add_widget( self.listed )
         self.kb = CucuKeyboard( self.onBtnExecPress )
         self.kb.size_hint = 1, 0.8
@@ -67,63 +67,97 @@ class CucuKeyboard( BoxLayout ) :
         inp.padding = 1
         self.current = TextInput()
         self.current.font_name = "font/ubuntu-mono/UbuntuMono-R.ttf"
+        self.current.font_size = 18
         self.current.size_hint = 0.85, 1
         inp.add_widget( self.current )
         btnExec = Button( text="Exec()" )
         btnExec.bind( on_press=handlerfoo )
         btnExec.size_hint = 0.15, 1
+        btnExec.font_size = 18
         inp.add_widget( btnExec )
         inp.size_hint = 1, 0.25
         self.add_widget( inp )
 
-        self.textnav = BoxLayout( orientation="vertical" )
-        self.numpad = GridLayout( cols=4 )
-        self.operators = GridLayout( cols=3 )
-        self.symbols = GridLayout( cols=5 )
+        self.textbar = BoxLayout( orientation="horizontal" )
+        self.parbar = BoxLayout( orientation="horizontal" )
+        self.numpad = GridLayout( cols=5 )
+        self.operators = GridLayout( cols=5 )
         self.functions = GridLayout( cols=5 )
 
-        self.textnav.padding = 1
+        self.textbar.padding = 1
+        self.parbar.padding = 1
         self.numpad.padding = 1
         self.functions.padding = 1
         self.operators.padding = 1
-        self.symbols.padding = 1
+        
+        """  
+        r = 9.0
+        self.textbar.size_hint = 1, 1/r 
+        self.parbar.size_hint = 1, 1/r 
+        self.numpad.size_hint = 1, 2/r
+        self.functions.size_hint = 1, 1/r
+        self.operators.size_hint = 1, 2/r
+        """
 
-        rows = 10.0
-        self.textnav.size_hint = 0.15, 1 
-        self.numpad.size_hint = 1, 3/rows
-        self.functions.size_hint = 1, 1/rows
-        self.operators.size_hint = 1, 4/rows
-        self.symbols.size_hint = 1, 2./rows
+        self.keys = { "textbar" :   { "<-"  : [ "<-", "<-", "<-" ], \
+                                      "del" : [ "del", "del", "del" ], \
+                                      "_"   : [ "_", "_", "_" ], \
+                                      "\\n" : [ "\\n", "\\n", "\\n" ], \
+                                      "\\t" : [ "\\t", "\\t", "\\t" ], \
+                                      "->"  : [ "->", "->", "->" ] },
 
-        self.keys = { "textnav" :   { 0 : "^ <- -> var def del \\n \\t".split( " " ),
-                                      1 : "^ <- -> var def del \\n \\t".split( " " ),
-                                      2 : "^ <- -> var def del \\n \\t".split( " " ) },
+                      "parbar" :    { "(" : [ "(", "(", "(" ], \
+                                      ")" : [ ")", ")", ")" ], \
+                                      "[" : [ "[", "[", "[" ], \
+                                      "]" : [ "]", "]", "]" ], \
+                                      "{" : [ "{", "{", "{" ], \
+                                      "}" : [ "}", "}", "}" ], \
+                                      "," : [ ",", ",", "," ] },
 
-                      "numpad" :    { 0 : list( "1234567890.I" ),
-                                      1 : list( "1234567890.I" ),
-                                      2 : list( "1234567890.I" ) }, 
+                      "numpad" :    { "1"  : [ "1", "1", "1" ], \
+                                      "2"  : [ "2", "2", "2" ], \
+                                      "3"  : [ "3", "3", "3" ], \
+                                      "4"  : [ "4", "4", "4" ], \
+                                      "5"  : [ "5", "5", "5" ], \
+                                      "6"  : [ "6", "6", "6" ], \
+                                      "7"  : [ "7", "7", "7" ], \
+                                      "8"  : [ "8", "8", "8" ], \
+                                      "9"  : [ "9", "9", "9" ], \
+                                      "0"  : [ "0", "0", "0" ], \
+                                      "."  : [ ".", ".", "." ], \
+                                      "I"  : [ "I", "I", "I" ], \
+                                      "E"  : [ "E", "E", "E" ], \
+                                      u"∏" : [ u"∏", u"∏", u"∏" ] },
 
-                      "symbols" :   { 0 : list( "xyztwTskE" ) + [ u"∏" ],
-                                      1 : list( "abcdfghlov" ),
-                                      2 : list( "ABpnumKMGP" ) }, 
+                      "operators" : { "ANS"   : [ "(", "(", "(" ], \
+                                      "evalf" : [ ")", ")", ")" ], \
+                                      "="     : [ "=", "=", "=" ], \
+                                      "+"     : [ "+", "+", "+" ], \
+                                      "-"     : [ "-", "-", "-" ], \
+                                      "*"     : [ "*", "*", "*" ], \
+                                      "/"     : [ "/", "/", "/" ], \
+                                      "**"    : [ "**", "**", "**" ], \
+                                      u"√"    : [ u"√", u"√", u"√" ] },
 
-                      "operators" : { 0 : "ANS , evalf + - * / **".split( " " ) + [ u"√" ] + "( ) =".split( " " ),
-                                      1 : "ANS , evalf + - * / **".split( " " ) + [ u"√" ] + "( ) =".split( " " ),
-                                      2 : "ANS , evalf + - * / **".split( " " ) + [ u"√" ] + "( ) =".split( " " ) },
+                      "functions" : { "^"      : [ "^", "^", "^" ], \
+                                      "subs"   : [ "subs", "subs", "subs" ], \
+                                      "cos"    : [ "cos", "aCos", ""], \
+                                      "sin"    : [ "sin", "aSin", "sinc" ], \
+                                      "tan"    : [ "tan", "aTan", "aTan2" ], \
+                                      "ln"     : [ "ln", "E**", "" ], \
+                                      "log"    : [ "log", "10**", "" ], \
+                                      u"Δx/Δy" : [ u"Δx/Δy", u"∫", "" ] }
 
-                      "functions" : { 0 : "cos sin tan Log".split( " " ) + [ u"Δx/Δy" ],
-                                      1 : "aCos aSin aTan aTan2".split( " " ) + [ u"∫" ],
-                                      2 : [ "subs units of measure" ] }
                     }
 
-        self.kb = BoxLayout( orientation="horizontal" )
+        self.kb = GridLayout( cols=6 ) #BoxLayout( orientation="horizontal" )
         tkb = BoxLayout( orientation="vertical" )
         tkb.add_widget( self.operators )
         tkb.add_widget( self.numpad )
-        tkb.add_widget( self.symbols )
         tkb.add_widget( self.functions )
+        tkb.add_widget( self.parbar )
+        tkb.add_widget( self.textbar )
         self.kb.add_widget( tkb )
-        self.kb.add_widget( self.textnav )
         self.add_widget( self.kb )
         self.shiftCount = -1
         self.onShift()
@@ -132,93 +166,61 @@ class CucuKeyboard( BoxLayout ) :
         self.shiftCount += 1
         if self.shiftCount == 3 : self.shiftCount = 0
 
+        self.kb.clear_widgets()
+
+        """
         self.functions.clear_widgets()
         self.numpad.clear_widgets()
-        self.symbols.clear_widgets()
         self.operators.clear_widgets()
-        self.textnav.clear_widgets()
+        self.parbar.clear_widgets()
+        self.textbar.clear_widgets()
+        """
 
-        for key in self.keys["numpad"][self.shiftCount] :
-            btn = Button( text=key )
-            btn.bind( on_press=self.onBtnPress ) 
-            self.numpad.add_widget( btn )
+        for key in self.keys.keys() :
+            keySet = self.keys[ key ]
+            for keyName in keySet.keys() :
+                caption = keySet[ keyName ][ self.shiftCount ]
+                btn = Button( text=caption )
+                btn.bind( on_press=self.onBtnPress ) 
+                btn.font_size = 18
+                self.kb.add_widget( btn )
 
-        for key in self.keys["symbols"][self.shiftCount] :
-            btn = Button( text=key )
-            btn.bind( on_press=self.onBtnPress ) 
-            self.symbols.add_widget( btn )
-
-        for key in self.keys["operators"][self.shiftCount] :
-            btn = Button( text=key )
-            btn.bind( on_press=self.onBtnPress ) 
-            self.operators.add_widget( btn )
-
-        for key in self.keys["functions"][self.shiftCount] :
-            btn = Button( text=key )
-            btn.bind( on_press=self.onBtnPress ) 
-            self.functions.add_widget( btn )
-
-        for key in self.keys["textnav"][self.shiftCount] :
-            btn = Button( text=key )
-            btn.bind( on_press=self.onBtnPress ) 
-            self.textnav.add_widget( btn )
- 
     def onBtnPress( self, instance ) :
         command = instance.text
+        toInsert = ""
 
-        if   command == u"√" : 
-            self.current.text += "sqrt("
-        elif command == u"∫" : 
-            self.current.text += ".integrate( x )"
-        elif command == u"Δx/Δy" : 
-            self.current.text += ".diff( x )"
-        elif command == "cos" : 
-            self.current.text += "cos("
-        elif command == "aCos" : 
-            self.current.text += "acos("
-        elif command == "sin" : 
-            self.current.text += "sin("
-        elif command == "aSin" : 
-            self.current.text += "asin("
-        elif command == "tan" : 
-            self.current.text += "tan("
-        elif command == "aTan" : 
-            self.current.text += "atan("
-        elif command == "aTan2" : 
-            self.current.text += "atan2("
-        elif command == "Log" : 
-            self.current.text += "log( x, b )"
-        elif command == "evalf" : 
-            self.current.text += ".evalf()"
-        elif command == u"∏" : 
-            self.current.text += "pi"
-        elif command == "e" : 
-            self.current.text += "E"
-        elif command == "^" : 
-            self.onShift()
-        elif   command == "\\n" : 
-            self.current.text += "\n"
-        elif command == "\\t" :
-            self.current.text += "    "
-        elif command == "del" :
-            if len( self.current.text ) > 0 :
-                self.current.text = self.current.text[:-1]
-        elif command == "subs units of measure" :
-            self.current.text += ".subs( { p:10**(-12), n:10**(-9), u:10**(-6), m:10**(-3), K:10**3, M:10**6, G:10**9, P:10**12 } )"
-#"textnav" block
-#!!!
-        elif command == "<-" : 
-            print( "Not yet implemented" )
-        elif command == "->" : 
-            print( "Not yet implemented" )
-        elif command == "var" : 
-            print( "Not yet implemented" )
-        elif command == "def" : 
-            print( "Not yet implemented" )
-#!!!
+        if   command == u"√" :     toInsert = "sqrt("
+        elif command == u"∫" :     toInsert = ".integrate( x )"
+        elif command == u"Δx/Δy" : toInsert = ".diff( x )"
+        elif command == "cos" :    toInsert = "cos("
+        elif command == "aCos" :   toInsert = "acos("
+        elif command == "sin" :    toInsert = "sin("
+        elif command == "aSin" :   toInsert = "asin("
+        elif command == "tan" :    toInsert = "tan("
+        elif command == "aTan" :   toInsert = "atan("
+        elif command == "aTan2" :  toInsert = "atan2("
+        elif command == "Log" :    toInsert = "log( x, b )"
+        elif command == "evalf" :  toInsert = ".evalf()"
+        elif command == u"∏" :     toInsert = "pi"
+        elif command == "E**" :    toInsert = "E**("
+        elif command == "10**" :   toInsert = "10**("
+        elif command == "_" :   toInsert = " "
+        elif command == "^" :      self.onShift()
+        elif command == "\\n" :    toInsert = "\n"
+        elif command == "\\t" :    toInsert = "    "
+        elif command == "<-" :     self.current.do_cursor_movement( 'cursor_left' )
+        elif command == "->" :     self.current.do_cursor_movement( 'cursor_right' )
+        elif command == "del" :    self.deleteChar()
+        elif command == "subs units of measure" : toInsert = ".subs( { p:10**(-12), n:10**(-9), u:10**(-6), m:10**(-3), K:10**3, M:10**6, G:10**9, P:10**12 } )"
         #all the rest...
         else : 
-            self.current.text += command
+            toInsert = command
+
+        self.current.text += toInsert 
+
+
+    def deleteChar( self ) : 
+        print( "Not yet implemented" )
 
     def flush( self ) : 
         self.current.text = ""

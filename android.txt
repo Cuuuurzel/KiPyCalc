@@ -1,3 +1,0 @@
-title=KiPyCalc
-author=Cuuuurzel
-orientation=portrait
