@@ -1,0 +1,13 @@
+#:kivy 1.0
+
+<Plotter>:
+    canvas:
+        Line:
+            width: 2
+            points: self.points
+        Line:
+            width: 1
+            points: self.center[0], 0, self.center[0], self.size[1]
+        Line:
+            width: 1
+            points: 0, self.center[1], self.size[0], self.center[1]

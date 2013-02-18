@@ -1,0 +1,49 @@
+from kivy.app import App
+from kivy.config import Config
+from kivy.lang import Builder
+from kivy.properties import ListProperty
+from kivy.uix.widget import Widget
+from sympy import *
+from sympy.abc import *
+from sympy.utilities.lambdify import lambdify
+
+Builder.load_file( "plotter.kv" )
+
+
+class Plotter( Widget ) :
+    points = ListProperty()
+
+    def __init__( self, foo, center, xRange, scale ) : 
+        Widget.__init__( self )
+        self.foo = lambdify( x, foo ) 
+        self.xRange = xRange
+        self.scale = scale
+        self.center = center
+        self.step = self.goodStep()
+        self.points = self.evalPoints()
+        
+    def goodStep( self ) :
+        dx = abs( self.xRange[0] - self.xRange[1] )
+        w = Config.get( 'graphics', 'width' )
+        return 1 
+
+    def evalPoints( self ) :
+        points = []
+        x = self.xRange[0]
+        while x < self.xRange[1] : 
+            y = self.foo( x )
+            points.append( x*self.scale[0] + self.center[0] )
+            points.append( y*self.scale[1] + self.center[1] )
+            x += self.step
+        return points
+
+
+class PlotterApp( App ) : 
+
+    def build( self ) : 
+        cx = int( Config.get( 'graphics', 'width' ) ) / 2
+        cy = int( Config.get( 'graphics', 'height' ) ) / 2
+        return Plotter( x**3, [0,0], [-200,200], [20,1] ) 
+
+if __name__ in [ '__main__', '__android__' ] :
+    PlotterApp().run()
