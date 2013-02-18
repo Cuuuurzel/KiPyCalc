@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 
 from code import InteractiveConsole
+from copy import deepcopy
 from kivy.app import App
 from kivy.base import EventLoop
 from kivy.clock import Clock
+from kivy.config import Config
 from kivy.graphics import *
 from kivy.lang import Builder
-from kivy.properties import ListProperty
+from kivy.properties import ListProperty, NumericProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.gridlayout import GridLayout
@@ -20,7 +22,6 @@ import sys
 
 FONT_NAME = "res/font/ubuntu-mono/UbuntuMono-R.ttf"
 FONT_SIZE = 24
-
 Builder.load_file( "kipycalc.kv" )
 
 
@@ -31,10 +32,11 @@ class CucuKeyboard( BoxLayout ) :
         BoxLayout.__init__( self, orientation="vertical" )
         inp = BoxLayout( orientation="horizontal" )
         inp.padding = 1
-        self.current = TextInput()
+        self.current = TextInput( text="x**3" )
         self.current.font_name = FONT_NAME
         self.current.font_size = FONT_SIZE
         self.current.size_hint = 0.85, 1
+
         inp.add_widget( self.current )
         btnExec = Button( text="Exec()" )
         btnExec.font_name = FONT_NAME
@@ -155,34 +157,6 @@ class CucuKeyboard( BoxLayout ) :
 
     def flush( self ) : 
         self.current.text = ""
-        
-
-class Plotter( Widget ) :
-    points = ListProperty()
-
-    def __init__( self, foo, center, xRange, scale ) : 
-        Widget.__init__( self )
-        self.foo = lambdify( x, foo ) 
-        self.xRange = xRange
-        self.scale = scale
-        self.center = center
-        self.step = self.goodStep()
-        self.points = self.evalPoints()
-
-    def goodStep( self ) :
-        dx = abs( self.xRange[0] - self.xRange[1] )
-        w = Config.get( 'graphics', 'width' )
-        return 1 
-
-    def evalPoints( self ) :
-        points = []
-        x = self.xRange[0]
-        while x < self.xRange[1] : 
-            y = self.foo( x )
-            points.append( x*self.scale[0] + self.center[0] )
-            points.append( y*self.scale[1] + self.center[1] )
-            x += self.step
-        return points
 
 
 class PyShell( BoxLayout ) :
@@ -204,9 +178,7 @@ class PyShell( BoxLayout ) :
         self.add_widget( frm )
 
     def start( self ) : 
-        oldStdout = sys.stdout
         sys.stdout = self
-        oldStderr = sys.stderr
         sys.stderr = self
         self.loadBuiltins()
 
@@ -240,33 +212,82 @@ def loadButtonsFromString( someWidget, names, onPress ) :
         btn.font_name = FONT_NAME
         btn.font_size = FONT_SIZE
         someWidget.add_widget( btn )
+        
+
+class Plotter( Widget ) :
+
+    points = ListProperty( [] )
+    plotWidth = NumericProperty( 2 )
+    axisWidth = NumericProperty( 1 )
+
+    def __init__( self ) :
+        Widget.__init__( self )
+        self.xRange = []
+        self.scale = []
+        self.origin = []
+        self.step = None
+
+    def plot( self, foo, origin, xRange, scale ) : 
+        self.foo = lambdify( x, foo ) 
+        self.xRange = xRange
+        self.scale = scale
+        self.origin = origin
+        self.step = self.goodStep()
+        self.points = self.evalPoints()
+
+    def goodStep( self ) :
+        dx = abs( self.xRange[0] - self.xRange[1] )
+        w = Config.get( 'graphics', 'width' )
+        return 1 
+
+    def evalPoints( self ) :
+        yMin = -int( Config.get( 'graphics', 'height' ) ) / 2
+        yMax = int( Config.get( 'graphics', 'height' ) ) / 2
+        print( "Calculating points... " ),
+        points = []
+        x = self.xRange[0]
+        while x < self.xRange[1] : 
+            y = self.foo( x )
+            if yMin < y < yMax :
+                points.append( x*self.scale[0] + self.origin[0] )
+                points.append( y*self.scale[1] + self.origin[1] )
+            x += self.step
+        print "DONE"
+        return points
+
+    def draw( self, someWidget ) :
+        with self.canvas :
+            Color( 0, 0, 0 )
+            Rectangle( pos=[0,0], size=[someWidget.width, someWidget.height] )
 
 
-class KiPyCalc( PyShell ) :
+class KiPyCalc( BoxLayout ) :
 
     def __init__( self, **kwargs ) :
-        PyShell.__init__( self, self.onBtnPlotPress )
+        BoxLayout.__init__( self, orientation="vertical" )
+        self.shell = PyShell( self.onBtnPlotPress )
+        self.plotter = Plotter()
+        self.add_widget( self.shell ) 
         self.plotterMode = False
-        with self.canvas:
-            Callback( self.draw )
-        Clock.schedule_interval( self.ask_update, 1/60. )
 
-    def draw( self, t ) :
-        if self.plotterMode : 
-            #draw as Plotter
-            pass                   
-
-    def ask_update( self, *args ) :
-        self.canvas.ask_update()
+    def start( self ) : 
+        self.shell.start()
 
     def onBtnPlotPress( self, instance ) : 
         self.plotterMode = True
         print( "Plot Mode On..." )
+        exp = self.shell.kb.current.text
+        print( "Expression: " + exp )
+        self.plotter.plot( eval( exp ), [self.width/2, self.height/2], [-100,100], [1,1] )
+        self.clear_widgets()
+        self.add_widget( self.plotter )
 
     def onReturnKey( self ) :
         if self.plotterMode :
             self.plotterMode = False
             print( "Plot Mode Off..." )
+            self.clear_widgets()
+            self.add_widget( self.shell )
 
 
 class KiPyCalcApp( App ) : 

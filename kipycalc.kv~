@@ -5,7 +5,3 @@
         Line:
             width: 2
             points: self.points
-
-<PyShell>:
-    Plotter:
-        id: plotter
