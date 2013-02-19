@@ -47,6 +47,7 @@ class Plotter( Widget ) :
         self.foo = lambdify( x, foo ) 
         self.origin = origin
         self.trySetup( kargs )
+        self.yRange = yRange
         self.step = self.goodStep()
         self.points = self.evalPoints()
 

@@ -515,8 +515,4 @@ class LambertW(Function):
             raise ArgumentIndexError(self, argindex)
 
 #personal features
-class ln( log ) :     
-
-    @classmethod
-    def eval( cls, arg ) :
-        log.eval( cls, arg, E ) 
+class ln

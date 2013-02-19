@@ -2,6 +2,13 @@
 
 <Plotter>:
     canvas:
+        Color: 
+            rgba: self.bgColor
+        Rectangle:
+            pos: 0,0
+            size: self.size
+        Color: 
+            rgba: self.plotColor
         Line:
             width: self.plotWidth
             points: self.points
