@@ -1,42 +1,26 @@
-from kivy.uix.boxlayout import BoxLayout
+from kivy.lang import Builder
+from kivy.properties import ObjectProperty, StringProperty
 from kivy.uix.label import Label
 from kivy.uix.slider import Slider
+from kivy.uix.widget import Widget
 
-class ColorChooser( BoxLayout ) :
-   
-    def __init__( self, msg, rgba ) : 
-        BoxLayout.__init__( self, orientation="vertical" )
-        self.add_widget( Label( text = msg ) )
-        self.r = Slider( min=0, max=100, value=rgba[0] )
-        self.g = Slider( min=0, max=100, value=rgba[1] )
-        self.b = Slider( min=0, max=100, value=rgba[2] )
-        self.a = Slider( min=0, max=100, value=rgba[3] )
+Builder.load_file( "kivyextras.kv" )
 
-        r = BoxLayout( orientation="horizontal" )
-        r.add_widget( Label( text="R : " ) )
-        r.add_widget( self.r )
-        g = BoxLayout( orientation="horizontal" )
-        g.add_widget( Label( text="G : " ) )
-        g.add_widget( self.g )
-        b = BoxLayout( orientation="horizontal" )
-        b.add_widget( Label( text="B : " ) )
-        b.add_widget( self.b )
-        a = BoxLayout( orientation="horizontal" )
-        a.add_widget( Label( text="A: " ) )
-        a.add_widget( self.a )
+class ColorChooser( Widget ) :
+ 
+    sldr = ObjectProperty( None )
+    sldg = ObjectProperty( None )
+    sldb = ObjectProperty( None )
+    label = StringProperty( "Pick up a color :" )
 
-        self.add_widget( r )
-        self.add_widget( g )
-        self.add_widget( b )
-        self.add_widget( a )
+    def __init__( self, label, rgb, **kargs ) : 
+        super( ColorChooser, self ).__init__( **kargs )
+        self.label = label
+        self.sldr.value_normalized = rgb[0]
+        self.sldg.value_normalized = rgb[1]
+        self.sldb.value_normalized = rgb[2]
 
-    def rgba( self ) : 
-        r = self.r.value_normalized
-        g = self.g.value_normalized
-        b = self.b.value_normalized
-        a = self.a.value_normalized
-        return r, g, b, a
-
-    def rgb( self ) :
-        return self.rgba[:-1]
-
+    def rgb( self ) : 
+        return self.sldr.value_normalized, \
+               self.sldg.value_normalized, \
+               self.sldb.value_normalized

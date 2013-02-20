@@ -1,15 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from code import InteractiveConsole
-from copy import deepcopy
 from kivy.app import App
-from kivy.base import EventLoop
-from kivy.clock import Clock
 from kivy.config import Config
-from kivy.graphics import *
 from kivy.lang import Builder
 from kivy.properties import ListProperty, NumericProperty
-from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.gridlayout import GridLayout
@@ -18,14 +12,13 @@ from kivy.uix.popup import Popup
 from kivy.uix.slider import Slider
 from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
+
 from sympy import *
 from sympy.abc import *
 from sympy.utilities.lambdify import lambdify
-import sys
 
 from kivyextras import ColorChooser
 
-DEBUG = True
 FONT_NAME = "res/font/ubuntu-mono/UbuntuMono-R.ttf"
 FONT_SIZE = 24
 Builder.load_file( "kipycalc.kv" )
@@ -47,6 +40,7 @@ class Plotter( Widget ) :
         self.foo = lambdify( x, foo ) 
         self.origin = origin
         self.trySetup( kargs )
+        self.yRange = yRange
         self.step = self.goodStep()
         self.points = self.evalPoints()
 
@@ -104,11 +98,11 @@ class PlottingOptionPanel( Popup ) :
         frm2 = BoxLayout( orientation="vertical" )
         self.errorsBefore = True
 
-        bgColor = ColorChooser( "Background Color :", [ 0, 0, 0, 100 ] )
+        bgColor = ColorChooser( "Background Color :", [ 0, 0, 0 ] )
         bgColor.size_hint = 1, 0.2
-        plotColor = ColorChooser( "Axis Color :", [ 0, 100, 0, 100 ] )
+        plotColor = ColorChooser( "Plot Color :", [ 0, 1, 0 ] )
         plotColor.size_hint = 1, 0.2
-        axisColor = ColorChooser( "Plot Color :", [ 100, 100, 100, 100 ] )
+        axisColor = ColorChooser( "Axis Color :", [ 1, 1, 1 ] )
         axisColor.size_hint = 1, 0.2
         self.colors = [ axisColor, bgColor, plotColor ]
 
@@ -187,17 +181,19 @@ class PlottingOptionPanel( Popup ) :
                 yScale = float( self.yscale.text )
                 self.errorsBefore = False
                 Popup.dismiss( self ) 
-                return { "axisColor" : self.colors[0].rgba(), \
-                         "bgColor"   : self.colors[1].rgba(), \
-                         "plotColor" : self.colors[2].rgba(), \
-                         "axisWidth" : self.axisWidth.value, \
-                         "plotWidth" : self.plotWidth.value, \
-                         "xscale"    : xScale, \
-                         "yscale"    : yScale, \
-                         "xRange"    : [ minx, maxx ] }
+                config = { "axisColor" : self.colors[0].rgba(), \
+                           "bgColor"   : self.colors[1].rgba(), \
+                           "plotColor" : self.colors[2].rgba(), \
+                           "axisWidth" : self.axisWidth.value, \
+                           "plotWidth" : self.plotWidth.value, \
+                           "xscale"    : xScale, \
+                           "yscale"    : yScale, \
+                           "xRange"    : [ minx, maxx ] }
+                print( config )
+                return config
             except ValueError : 
                 if not self.errorsBefore : 
-                    self.errorsBefore = False
+                    self.errorsBefore = True
                     self.expLabel.text += "\nCheck your input please!!"
         else : 
             Popup.dismiss( self )

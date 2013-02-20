@@ -1,33 +1,15 @@
 # -*- coding: utf-8 -*-
 
 from code import InteractiveConsole
-from copy import deepcopy
 from kivy.app import App
 from kivy.base import EventLoop
-from kivy.clock import Clock
-from kivy.config import Config
-from kivy.graphics import *
-from kivy.lang import Builder
-from kivy.properties import ListProperty, NumericProperty
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.button import Button
-from kivy.uix.gridlayout import GridLayout
-from kivy.uix.label import Label
-from kivy.uix.popup import Popup
-from kivy.uix.textinput import TextInput
-from kivy.uix.widget import Widget
-from sympy import *
-from sympy.abc import *
-from sympy.utilities.lambdify import lambdify
-import sys
 
 from shell import *
 from plotter import *
 
-DEBUG = True
 FONT_NAME = "res/font/ubuntu-mono/UbuntuMono-R.ttf"
 FONT_SIZE = 24
-Builder.load_file( "kipycalc.kv" )
 
 class KiPyCalc( BoxLayout ) :
 
@@ -37,7 +19,7 @@ class KiPyCalc( BoxLayout ) :
         self.plotter = None
         self.add_widget( self.shell ) 
         self.plotterMode = False
-        self.plottingOptionPanel = PlottingOptionPanel( self.onPlotConfirm )
+        self.plottingOptionPanel = PlottingOptionPanel( self.onPlotConfirm )        
 
     def start( self ) : 
         self.shell.start()

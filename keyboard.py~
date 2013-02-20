@@ -106,7 +106,7 @@ class CucuKeyboard( BoxLayout ) :
         loadButtonsFromString( self.numpad, keySet, self.onBtnPress )
 
     def loadFoo1( self ) :
-        keySet = "cos sin tan ln log diff".split( " " )
+        keySet = "cos sin tan Ln Log diff".split( " " )
         loadButtonsFromString( self.foo1, keySet, self.onBtnPress )
 
     def loadFoo2( self ) :

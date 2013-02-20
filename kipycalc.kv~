@@ -3,7 +3,7 @@
 <Plotter>:
     canvas:
         Color: 
-            rgba: self.bgColor
+            rgb: self.bgColor
         Rectangle:
             pos: 0,0
             size: self.size
