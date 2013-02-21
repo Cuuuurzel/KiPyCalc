@@ -12,7 +12,7 @@ import sys
 
 from keyboard import *
 
-DEBUG = False
+DEBUG = True
 FONT_NAME = "res/font/ubuntu-mono/UbuntuMono-R.ttf"
 FONT_SIZE = 18
 
@@ -49,7 +49,7 @@ class PyShell( BoxLayout ) :
    
     def inputOk( self, someInputString ) :
         print( "in: " + someInputString )
-        if someInputString.find( "integrate" ) != -1 : 
+        if "integrate" in someInputString : 
             print( "This may take long... please wait" )
         return True
 

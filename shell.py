@@ -49,8 +49,8 @@ class PyShell( BoxLayout ) :
    
     def inputOk( self, someInputString ) :
         print( "in: " + someInputString )
-        if someInputString.find( "integrate" ) != -1 : 
-            print( "This may take long... please wait" )
+        if "integrate" in someInputString : 
+            print( "This may take long... please wait." )
         return True
 
     def onBtnExecPress( self, instance ) :

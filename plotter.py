@@ -33,19 +33,15 @@ class Plotter( Widget ) :
     plotWidth = NumericProperty( 1 )
     axisWidth = NumericProperty( 1 )
     yscale = NumericProperty( 1 )
-    origin = ListProperty( [ 0, 0 ] )
+    plotd = ListProperty( [ 0, 0 ] )
 
-    def __init__( self, foo, origin, config ) : 
+    def __init__( self, foo, config ) : 
         Widget.__init__( self )
         self.foo = lambdify( x, foo ) 
-        self.origin = origin
-        self.trySetup( config )
-        yd = 3 * float( Config.get( 'graphics', 'height' ) ) / 2
-        self.yRange = -yd, yd
-        self.step = self.goodStep( config )
+        self.setup( config )
         self.points = self.evalPoints()
 
-    def trySetup( self, config ) : 
+    def setup( self, config ) : 
         try :
             self.bgColor = config[ "bgColor" ]
         except KeyError : pass
@@ -67,6 +63,13 @@ class Plotter( Widget ) :
         try :
             self.xRange = config[ "xRange" ]
         except KeyError : pass
+
+        h = float( Config.get( 'graphics', 'height' ) )
+        w = float( Config.get( 'graphics', 'width' ) )
+        self.step = self.goodStep( config )
+        self.pixelPerX = self.goodStep( {} )
+        self.yRange = -3*self.yscale*h/2, 3*self.yscale*h/2 #?
+        self.plotd = -self.xRange[0]/self.pixelPerX, h/2
  
     def goodStep( self, config ) :
         if "step" in config.keys() and config[ "step" ] != 0 :
@@ -83,14 +86,14 @@ class Plotter( Widget ) :
         while x < self.xRange[1] : 
             y = self.foo( x )
             if self.yRange[0] < y < self.yRange[1] :
-                points.append( x/self.step + self.origin[0] )
-                points.append( y + self.origin[1] )
+                points.append( x/self.pixelPerX + self.plotd[0] )
+                points.append( y/self.yscale + self.plotd[1] )
             x += self.step
         return points
 
     def on_touch_move( self, touch ) :
-        dx = ( self.origin[0] - touch.x ) * self.step
-        self.origin = touch.x, touch.y
+        dx = ( self.plotd[0] - touch.x ) * self.step
+        self.plotd = touch.x, touch.y
         self.xRange = self.xRange[0]+dx, self.xRange[1]+dx
 
     def on_touch_up( self, touch ) :
@@ -117,13 +120,18 @@ class PlottingOptionPanel( Popup ) :
 
         xMin = BoxLayout( orientation="vertical" )
         xMin.add_widget( Label( text="Min X : " ) )
-        self.xMin = NumericUpDown( value=-100, vstep=0.1 )
+        self.xMin = NumericUpDown( value=-10, vstep=0.1 )
         xMin.add_widget( self.xMin )
  
         xMax = BoxLayout( orientation="vertical" )
         xMax.add_widget( Label( text="Max X : " ) )
-        self.xMax = NumericUpDown( value=100, vstep=0.1 )
+        self.xMax = NumericUpDown( value=10, vstep=0.1 )
         xMax.add_widget( self.xMax )
+ 
+        yscale = BoxLayout( orientation="vertical" )
+        yscale.add_widget( Label( text="Y Scale Factor : " ) )
+        self.yscale = NumericUpDown( value=1, vstep=1 )
+        yscale.add_widget( self.yscale )
  
         step = BoxLayout( orientation="vertical" )
         step.add_widget( Label( text="X-Step ( 0=Best ) : " ) )
@@ -142,6 +150,7 @@ class PlottingOptionPanel( Popup ) :
         frm2.add_widget( step )
         frm2.add_widget( xMin )
         frm2.add_widget( xMax )
+        frm2.add_widget( yscale )
 
         optionPanel.add_widget( frm1 )
         optionPanel.add_widget( frm2 )
@@ -166,6 +175,7 @@ class PlottingOptionPanel( Popup ) :
                            "bgColor"   : self.colors[1].rgb(), \
                            "plotColor" : self.colors[2].rgb(), \
                            "step"      : self.step.value, \
+                           "yscake"    : self.yscale.value, \
                            "xRange"    : [ self.xMin.value, self.xMax.value ] }
                 return config
             except ValueError : 
@@ -174,13 +184,3 @@ class PlottingOptionPanel( Popup ) :
                     self.expLabel.text += "\nCheck your input please!!"
         else : 
             Popup.dismiss( self )
-
-
-
-
-
-
-
-
-
-
