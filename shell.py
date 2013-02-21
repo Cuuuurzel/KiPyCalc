@@ -12,7 +12,7 @@ import sys
 
 from keyboard import *
 
-DEBUG = True
+DEBUG = False
 FONT_NAME = "res/font/ubuntu-mono/UbuntuMono-R.ttf"
 FONT_SIZE = 18
 
@@ -41,6 +41,7 @@ class PyShell( BoxLayout ) :
         self.loadBuiltins()
 
     def loadBuiltins( self ) :
+        self.console.push( "from math import *\n" )
         self.console.push( "from sympy import *\n" )
         self.console.push( "from sympy.abc import *\n" )
 

@@ -37,9 +37,10 @@ class Plotter( Widget ) :
 
     def __init__( self, foo, config ) : 
         Widget.__init__( self )
+        self.expr = foo
         self.foo = lambdify( x, foo ) 
         self.setup( config )
-        self.points = self.evalPoints()
+        self.evalPoints()  
 
     def setup( self, config ) : 
         try :
@@ -84,12 +85,14 @@ class Plotter( Widget ) :
         points = []
         x = self.xRange[0]
         while x < self.xRange[1] : 
-            y = self.foo( x )
-            if self.yRange[0] < y < self.yRange[1] :
-                points.append( x/self.pixelPerX + self.plotd[0] )
-                points.append( y/self.yscale + self.plotd[1] )
+            try :
+                y = self.foo( x )
+                if self.yRange[0] < y < self.yRange[1] :
+                    points.append( x/self.pixelPerX + self.plotd[0] )
+                    points.append( y/self.yscale + self.plotd[1] )
+            except Exception : pass
             x += self.step
-        return points
+        self.points = points
 
     def on_touch_move( self, touch ) :
         dx = ( self.plotd[0] - touch.x ) * self.step
@@ -98,7 +101,7 @@ class Plotter( Widget ) :
 
     def on_touch_up( self, touch ) :
         self.on_touch_move( touch )
-        self.points = self.evalPoints() 
+        self.evalPoints() 
 
 
 class PlottingOptionPanel( Popup ) :

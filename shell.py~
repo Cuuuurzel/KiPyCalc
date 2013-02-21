@@ -41,6 +41,7 @@ class PyShell( BoxLayout ) :
         self.loadBuiltins()
 
     def loadBuiltins( self ) :
+        self.console.push( "from math import *\n" )
         self.console.push( "from sympy import *\n" )
         self.console.push( "from sympy.abc import *\n" )
 
@@ -50,7 +51,7 @@ class PyShell( BoxLayout ) :
     def inputOk( self, someInputString ) :
         print( "in: " + someInputString )
         if "integrate" in someInputString : 
-            print( "This may take long... please wait" )
+            print( "This may take long... please wait." )
         return True
 
     def onBtnExecPress( self, instance ) :

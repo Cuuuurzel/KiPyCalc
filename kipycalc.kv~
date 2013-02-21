@@ -7,16 +7,24 @@
         Rectangle:
             pos: 0,0
             size: self.size
+
         Color: 
             rgb: self.axisColor
         Line:
             width: self.axisWidth
-            points: [ self.plotd[0], 0, self.origin[0], self.height ]
+            points: [ self.plotd[0], 0, self.plotd[0], self.height ]
         Line:
             width: self.axisWidth
-            points: [ 0, self.origin[1], self.width, self.origin[1] ]
+            points: [ 0, self.plotd[1], self.width, self.plotd[1] ]
+
         Color: 
             rgb: self.plotColor
         Line:
             width: self.plotWidth
             points: self.points
+
+        Color: 
+            rgb: self.plotColor
+        Point:
+            points: self.intersections
+            pointsize: self.plotWidth*7
