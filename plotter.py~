@@ -3,144 +3,132 @@
 from kivy.app import App
 from kivy.config import Config
 from kivy.lang import Builder
-from kivy.properties import ListProperty, NumericProperty
+from kivy.properties import BooleanProperty, ListProperty, NumericProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
+from kivy.uix.checkbox import CheckBox
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 from kivy.uix.slider import Slider
 from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
-
+from kivyextras import ColorChooser, NumericUpDown
 from sympy import *
 from sympy.abc import *
 from sympy.utilities.lambdify import lambdify
 
-from kivyextras import ColorChooser
-
 FONT_NAME = "res/font/ubuntu-mono/UbuntuMono-R.ttf"
 FONT_SIZE = 24
 Builder.load_file( "kipycalc.kv" )
+
 
 class Plotter( Widget ) :
 
     points = ListProperty( [] )
     bgColor = ListProperty( [0,0,0] )
     plotColor = ListProperty( [0,1,0] )
-    axiscolor = ListProperty( [1,1,1] )
+    axisColor = ListProperty( [1,1,1] )
     xRange = ListProperty( [-1,1] )
     plotWidth = NumericProperty( 1 )
     axisWidth = NumericProperty( 1 )
-    xscale = NumericProperty( 1 )
     yscale = NumericProperty( 1 )
+    origin = ListProperty( [ 0, 0 ] )
 
-    def __init__( self, foo, origin, yRange, kargs ) : 
+    def __init__( self, foo, , config ) : 
         Widget.__init__( self )
         self.foo = lambdify( x, foo ) 
         self.origin = origin
-        self.trySetup( kargs )
-        self.yRange = yRange
-        self.step = self.goodStep()
+        self.trySetup( config )
+        yd = 3 * float( Config.get( 'graphics', 'height' ) ) / 2
+        self.yRange = -yd, yd
+        self.step = self.goodStep( config )
         self.points = self.evalPoints()
 
-    def trySetup( self, kargs ) : 
+    def trySetup( self, config ) : 
         try :
-            self.bgColor = kargs[ "bgColor" ]
+            self.bgColor = config[ "bgColor" ]
         except KeyError : pass
         try :
-            self.axiscolor = kargs[ "axiscolor" ]
+            self.axisColor = config[ "axisColor" ]
         except KeyError : pass
         try :
-            self.plotColor = kargs[ "plotColor" ]
+            self.plotColor = config[ "plotColor" ]
         except KeyError : pass
         try :
-            self.plotWidth = kargs[ "plotWidth" ]
+            self.plotWidth = config[ "plotWidth" ]
         except KeyError : pass
         try :
-            self.axisWidth = kargs[ "axisWidth" ]
+            self.axisWidth = config[ "axisWidth" ]
         except KeyError : pass
         try :
-            self.xscale = kargs[ "xscale" ]
+            self.yscale = config[ "yscale" ]
         except KeyError : pass
         try :
-            self.yscale = kargs[ "yscale" ]
+            self.xRange = config[ "xRange" ]
         except KeyError : pass
-        try :
-            self.xRange = kargs[ "xRange" ]
-        except KeyError : pass
-
-    def goodStep( self ) :
-        dx = abs( self.xRange[0] - self.xRange[1] )
-        w = Config.get( 'graphics', 'width' )
-        return 1 
+ 
+    def goodStep( self, config ) :
+        if "step" in config.keys() and config[ "step" ] != 0 :
+            return config[ "step" ]
+        else : 
+            w = float( Config.get( 'graphics', 'width' ) )
+            xd = abs( self.xRange[1] - self.xRange[0] )
+            s = float( xd ) / w
+        return s 
 
     def evalPoints( self ) :
-        print( "Calculating points... " ),
         points = []
         x = self.xRange[0]
         while x < self.xRange[1] : 
             y = self.foo( x )
             if self.yRange[0] < y < self.yRange[1] :
-                points.append( x*self.xscale + self.origin[0] )
-                points.append( y*self.yscale + self.origin[1] )
+                points.append( x/self.step + self.origin[0] )
+                points.append( y + self.origin[1] )
             x += self.step
-        print "DONE"
         return points
+
+    def on_touch_move( self, touch ) :
+        dx = ( self.origin[0] - touch.x ) * self.step
+        self.origin = touch.x, touch.y
+        self.xRange = self.xRange[0]+dx, self.xRange[1]+dx
+
+    def on_touch_up( self, touch ) :
+        self.on_touch_move( touch )
+        self.points = self.evalPoints() 
 
 
 class PlottingOptionPanel( Popup ) :
+    
+    errorsBefore = BooleanProperty( False )
 
     def __init__( self, onConfirm ) :
         cont = BoxLayout( orientation="vertical" )
         optionPanel = BoxLayout( orientation="horizontal" )
         frm1 = BoxLayout( orientation="vertical" )
         frm2 = BoxLayout( orientation="vertical" )
-        self.errorsBefore = True
+        optionPanel.spacing = 30
+        cont.spacing = 30
 
-        bgColor = ColorChooser( "Background Color :", [ 0, 0, 0 ] )
-        bgColor.size_hint = 1, 0.2
-        plotColor = ColorChooser( "Plot Color :", [ 0, 1, 0 ] )
-        plotColor.size_hint = 1, 0.2
-        axisColor = ColorChooser( "Axis Color :", [ 1, 1, 1 ] )
-        axisColor.size_hint = 1, 0.2
+        bgColor = ColorChooser( label="Background Color :", rgb=[ 0, 0, 0 ] )
+        plotColor = ColorChooser( label="Plot Color :", rgb=[ 0, 1, 0 ] )
+        axisColor = ColorChooser( label="Axis Color :", rgb=[ 1, 1, 1 ] )
         self.colors = [ axisColor, bgColor, plotColor ]
 
-        plotwidth = BoxLayout( orientation="horizontal" )
-        plotwidth.add_widget( Label( text="Plot width : " ) )
-        self.plotWidth = Slider( min=1, max=5, value=1 )
-        plotwidth.add_widget( self.plotWidth )
-        plotwidth.size_hint = 1, 0.1
-
-        axiswidth = BoxLayout( orientation="horizontal" )
-        axiswidth.add_widget( Label( text="Axis width : " ) )
-        self.axisWidth = Slider( min=1, max=5, value=1 )
-        axiswidth.add_widget( self.axisWidth )
-        axiswidth.size_hint = 1, 0.1
-
-        xscale = BoxLayout( orientation="horizontal" )
-        xscale.add_widget( Label( text="X Scale : " ) )
-        self.xscale = TextInput( text="1" )
-        xscale.add_widget( self.xscale )
-        xscale.size_hint = 1, 0.1
- 
-        yscale = BoxLayout( orientation="horizontal" )
-        yscale.add_widget( Label( text="Y Scale : " ) )
-        self.yscale = TextInput( text="0.05" )
-        yscale.add_widget( self.yscale )
-        yscale.size_hint = 1, 0.1
- 
-        xMin = BoxLayout( orientation="horizontal" )
+        xMin = BoxLayout( orientation="vertical" )
         xMin.add_widget( Label( text="Min X : " ) )
-        self.xMin = TextInput( text="-240" )
+        self.xMin = NumericUpDown( value=-100, vstep=0.1 )
         xMin.add_widget( self.xMin )
-        xMin.size_hint = 1, 0.1
  
-        xMax = BoxLayout( orientation="horizontal" )
+        xMax = BoxLayout( orientation="vertical" )
         xMax.add_widget( Label( text="Max X : " ) )
-        self.xMax = TextInput( text="240" )
+        self.xMax = NumericUpDown( value=100, vstep=0.1 )
         xMax.add_widget( self.xMax )
-        xMax.size_hint = 1, 0.1
+ 
+        step = BoxLayout( orientation="vertical" )
+        step.add_widget( Label( text="X-Step ( 0=Best ) : " ) )
+        self.step = NumericUpDown( vmin=0, value=0, vstep=0.1 )
+        step.add_widget( self.step )
 
         btnConfirm = Button( text="Ok, Plot!" )
         btnConfirm.bind( on_press=onConfirm )
@@ -151,10 +139,7 @@ class PlottingOptionPanel( Popup ) :
 
         for x in self.colors : frm1.add_widget( x )
 
-        frm2.add_widget( plotwidth )
-        frm2.add_widget( axiswidth )
-        frm2.add_widget( xscale )
-        frm2.add_widget( yscale )
+        frm2.add_widget( step )
         frm2.add_widget( xMin )
         frm2.add_widget( xMax )
 
@@ -175,21 +160,13 @@ class PlottingOptionPanel( Popup ) :
     def dismiss( self, forced=False ) :
         if not forced : 
             try :
-                minx = float( self.xMin.text )
-                maxx = float( self.xMax.text )
-                xScale = float( self.xscale.text )
-                yScale = float( self.yscale.text )
                 self.errorsBefore = False
                 Popup.dismiss( self ) 
-                config = { "axisColor" : self.colors[0].rgba(), \
-                           "bgColor"   : self.colors[1].rgba(), \
-                           "plotColor" : self.colors[2].rgba(), \
-                           "axisWidth" : self.axisWidth.value, \
-                           "plotWidth" : self.plotWidth.value, \
-                           "xscale"    : xScale, \
-                           "yscale"    : yScale, \
-                           "xRange"    : [ minx, maxx ] }
-                print( config )
+                config = { "axisColor" : self.colors[0].rgb(), \
+                           "bgColor"   : self.colors[1].rgb(), \
+                           "plotColor" : self.colors[2].rgb(), \
+                           "step"      : self.step.value, \
+                           "xRange"    : [ self.xMin.value, self.xMax.value ] }
                 return config
             except ValueError : 
                 if not self.errorsBefore : 

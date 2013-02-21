@@ -3,12 +3,13 @@
 from code import InteractiveConsole
 from kivy.app import App
 from kivy.base import EventLoop
+from kivy.config import Config
 from kivy.uix.boxlayout import BoxLayout
 
 from shell import *
 from plotter import *
+from kivyextras import *
 
-DEBUG = True
 FONT_NAME = "res/font/ubuntu-mono/UbuntuMono-R.ttf"
 FONT_SIZE = 24
 
@@ -27,7 +28,6 @@ class KiPyCalc( BoxLayout ) :
 
     def onPlotRequest( self, instance ) : 
         self.plotterMode = True
-        print( "Plot Mode On..." )
         exp = self.shell.kb.current.text
         self.plottingOptionPanel.open( exp )
 
@@ -35,8 +35,6 @@ class KiPyCalc( BoxLayout ) :
         options = self.plottingOptionPanel.dismiss()
         if options != None :
             self.plotter = Plotter( eval( self.shell.kb.current.text ), \
-                                    [ self.width/2, self.height/2 ], \
-                                    [ -self.height/2, self.height/2 ], \
                                     options ) 
             self.clear_widgets()
             self.add_widget( self.plotter )
@@ -44,7 +42,6 @@ class KiPyCalc( BoxLayout ) :
     def onReturnKey( self ) :
         if self.plotterMode :
             self.plotterMode = False
-            print( "Plot Mode Off..." )
             self.clear_widgets()
             self.add_widget( self.shell )
             self.plottingOptionPanel.dismiss( True )
@@ -65,7 +62,6 @@ class KiPyCalcApp( App ) :
         if key == 27 :
             self.kpc.onReturnKey() 
             return True 
-
 
 if __name__ in [ "__android__", "__main__" ] :
     KiPyCalcApp().run()
