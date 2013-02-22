@@ -9,22 +9,21 @@
             size: self.size
 
         Color: 
-            rgb: self.axisColor
-        Line:
-            width: self.axisWidth
-            points: [ self.plotd[0], 0, self.plotd[0], self.height ]
-        Line:
-            width: self.axisWidth
-            points: [ 0, self.plotd[1], self.width, self.plotd[1] ]
-
-        Color: 
             rgb: self.plotColor
         Line:
             width: self.plotWidth
             points: self.points
 
-        Color: 
-            rgb: self.plotColor
-        Point:
-            points: self.intersections
-            pointsize: self.plotWidth*7
+
+<PlottingOptionPanel>:
+    btnConfirm: btnConfirm
+    expLabel: expLabel
+
+    content:
+        Button:
+            id: btnConfirm
+            text: "Ok, Plot"
+        Label:
+            id: expLabel
+            text: ""
+            
