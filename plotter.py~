@@ -2,6 +2,7 @@
 
 from kivy.app import App
 from kivy.config import Config
+from kivy.graphics import Color, Rectangle, Point, GraphicException
 from kivy.lang import Builder
 from kivy.properties import BooleanProperty, ListProperty, NumericProperty
 from kivy.uix.boxlayout import BoxLayout
@@ -14,11 +15,28 @@ from kivy.uix.slider import Slider
 from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
 from kivyextras import ColorChooser, NumericUpDown
-from sympy import *
+from math import sqrt
 from sympy.abc import *
 from sympy.utilities.lambdify import lambdify
+from random import random
 
 Builder.load_file( "kipycalc.kv" )
+
+def calculate_points(x1, y1, x2, y2, steps=5):
+    dx = x2 - x1
+    dy = y2 - y1
+    dist = sqrt(dx * dx + dy * dy)
+    if dist < steps:
+        return None
+    o = []
+    m = dist / steps
+    for i in xrange(1, int(m)):
+        mi = i / m
+        lastx = x1 + dx * mi
+        lasty = y1 + dy * mi
+        o.extend([lastx, lasty])
+    return o
+
 
 class Plotter( Widget ) :
 
@@ -31,7 +49,9 @@ class Plotter( Widget ) :
     xRange = ListProperty( [-1,1] )
     yRange = ListProperty( [-1,1] )
     step = NumericProperty( 0 )
-    _lastTouch = ListProperty( [0,0] )
+    xpp = NumericProperty( 0 )
+    ypp = NumericProperty( 0 )
+    _touches = ListProperty( [] )
 
     def __init__( self, foo, config ) : 
         Widget.__init__( self )
@@ -69,7 +89,7 @@ class Plotter( Widget ) :
         except KeyError : 
             yToDisplay = 2
 
-        self.step = xToDisplay / float( self.width ) #?float( self.width ) / xToDisplay
+        self.step = xToDisplay / float( self.width )
         self.xpp = float( self.width ) / xToDisplay
         self.ypp = float( self.height ) / yToDisplay
         self.xRange = -xToDisplay/2.0, xToDisplay/2.0
@@ -83,7 +103,6 @@ class Plotter( Widget ) :
     def evalPoints( self ) :
         points = []
         x = self.xRange[0]
-        print( self.xpp, self.ypp, self.xRange, self.yRange )
         while x < self.xRange[1] : 
             try :
                 y = self.foo( x )
@@ -94,19 +113,82 @@ class Plotter( Widget ) :
                     points.append( py )
             except Exception : pass
             x += self.step
-        print( points )
         self.points = points
     
     def on_touch_down( self, touch ) :
-        self._lastTouch = touch.x, touch.y
+        #add the touch to a special list
+        self._touches.append( touch )
+        #prepare its user data
+        ud = touch.ud
+        ud['group'] = g = str( touch.uid )
+        #add new canvas instructions for it
+        with self.canvas:
+            ud['color'] = Color(random(), 1, 1, mode='hsv', group=g)
+            ud['lines'] = ( Point( points=(touch.x, touch.y), pointsize=self.axisWidth, group=g ) )
+        #grab it
+        touch.grab(self)
+        return True
 
     def on_touch_up( self, touch ) :
-        dx = ( touch.x - self._lastTouch[0] ) / self.xpp
-        dy = ( touch.y - self._lastTouch[1] ) / self.ypp
-        self.xRange = self.xRange[0]-dx, self.xRange[1]-dx
-        self.yRange = self.yRange[0]-dy, self.yRange[1]-dy
-        self.evalPoints()
-    
+        #remove the touch from the list
+        for t in self._touches :
+            if t.uid == touch.uid:
+                self._touches.remove( t )
+        #ungrub it
+        if touch.grab_current is not self:
+            return
+        touch.ungrab( self )
+        ud = touch.ud
+        #and the delete its canvas instructions
+        self.canvas.remove_group( ud['group'] )
+
+    def on_touch_move( self, touch ) :
+        #check if the touch is attached to this widget and get user data
+        if touch.grab_current is not self:
+            return
+        ud = touch.ud
+        #add new points to the canvas 
+        points = ud['lines'].points
+        oldx, oldy = points[-2], points[-1]
+        points = calculate_points(oldx, oldy, touch.x, touch.y)
+        if points:
+            try:
+                lp = ud['lines'].add_point
+                for idx in xrange(0, len(points), 2):
+                    lp(points[idx], points[idx+1])
+            except GraphicException:
+                pass
+        #update touch living time
+        import time
+        t = int(time.time())
+        if t not in ud:
+            ud[t] = 1
+        else:
+            ud[t] += 1
+        #check if the touch is sigle or multiple
+        if len( self._touches ) == 1 :
+            self.movePlot()
+        elif len( self._touches ) == 2 :
+            self.pinchZoom() 
+
+    def movePlot( self ) :
+         dx = ( self._touches[0].px - self._touches[0].x )/( self.xpp )
+         dy = ( self._touches[0].py - self._touches[0].y )/( self.ypp )
+         self.xRange = self.xRange[0]+dx, self.xRange[1]+dx
+         self.yRange = self.yRange[0]+dy, self.yRange[1]+dy
+         self.evalPoints()
+
+    def pinchZoom( self ) :
+         d0x = ( self._touches[0].ox - self._touches[1].ox )
+         d0y = ( self._touches[0].oy - self._touches[1].oy )
+         d1x = ( self._touches[0].x - self._touches[1].x )
+         d1y = ( self._touches[0].y - self._touches[1].y )
+         dx = d0x - d1x
+         dy = d0x - d1x
+         self.xRange = self.xRange[0]+dx, self.xRange[1]+dx
+         self.yRange = self.yRange[0]+dy, self.yRange[1]+dy        
+         self.evalPoints()
+
 
 class PlottingOptionPanel( Popup ) :
     
@@ -184,15 +266,3 @@ class PlottingOptionPanel( Popup ) :
                     self.expLabel.text += "\nCheck your input please!!"
         else : 
             Popup.dismiss( self )
-
-
-"""
-        Color: 
-            rgb: self.axisColor
-        Line:
-            width: self.axisWidth
-            points: [ self.plotd[0], 0, self.plotd[0], self.height ]
-        Line:
-            width: self.axisWidth
-            points: [ 0, self.plotd[1], self.width, self.plotd[1] ]
-"""

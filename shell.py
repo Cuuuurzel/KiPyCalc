@@ -14,7 +14,7 @@ from keyboard import *
 
 DEBUG = True
 FONT_NAME = "res/font/ubuntu-mono/UbuntuMono-R.ttf"
-FONT_SIZE = 18
+FONT_SIZE = 20
 
 class PyShell( BoxLayout ) :
 

@@ -64,5 +64,7 @@ class KiPyCalcApp( App ) :
             self.kpc.onReturnKey() 
             return True 
 
+    def on_pause( self ) : return True
+
 if __name__ in [ "__android__", "__main__" ] :
     KiPyCalcApp().run()

@@ -14,16 +14,11 @@
             width: self.plotWidth
             points: self.points
 
-
-<PlottingOptionPanel>:
-    btnConfirm: btnConfirm
-    expLabel: expLabel
-
-    content:
-        Button:
-            id: btnConfirm
-            text: "Ok, Plot"
-        Label:
-            id: expLabel
-            text: ""
-            
+        Color: 
+            rgb: self.axisColor
+        Line:
+            width: self.axisWidth
+            points: [ (-self.xRange[0])*self.xpp, 0, (-self.xRange[0])*self.xpp, self.height ]
+        Line:
+            width: self.axisWidth
+            points: [ 0, (-self.yRange[0])*self.xpp, self.width, (-self.yRange[0])*self.ypp ]

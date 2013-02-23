@@ -12,7 +12,7 @@ import sys
 
 from keyboard import *
 
-DEBUG = False
+DEBUG = True
 FONT_NAME = "res/font/ubuntu-mono/UbuntuMono-R.ttf"
 FONT_SIZE = 18
 
