@@ -51,7 +51,9 @@ class Plotter( Widget ) :
     step = NumericProperty( 0 )
     xpp = NumericProperty( 0 )
     ypp = NumericProperty( 0 )
+    pinchWeight = NumericProperty( 5 )
     _touches = ListProperty( [] )
+    _stepAuto = BooleanProperty( True )
 
     def __init__( self, foo, config ) : 
         Widget.__init__( self )
@@ -89,16 +91,22 @@ class Plotter( Widget ) :
         except KeyError : 
             yToDisplay = 2
 
-        self.step = xToDisplay / float( self.width )
-        self.xpp = float( self.width ) / xToDisplay
-        self.ypp = float( self.height ) / yToDisplay
         self.xRange = -xToDisplay/2.0, xToDisplay/2.0
         self.yRange = -yToDisplay/2.0, yToDisplay/2.0
-
+        self.setupXYpp( xToDisplay, yToDisplay )
         try :
             if config[ "step" ] > 0 :
                 self.step = config[ "step" ]
+                self._stepAuto = False
         except KeyError : pass
+
+    def setupXYpp( self, xtd=None, ytd=None ) :
+        xToDisplay = xtd or self.xRange[1]-self.xRange[0]
+        yToDisplay = ytd or self.yRange[1]-self.yRange[0]
+        self.xpp = float( self.width ) / xToDisplay
+        self.ypp = float( self.height ) / yToDisplay
+        if self._stepAuto :
+            self.step = xToDisplay / float( self.width )
 
     def evalPoints( self ) :
         points = []
@@ -114,6 +122,30 @@ class Plotter( Widget ) :
             except Exception : pass
             x += self.step
         self.points = points
+
+    def movePlot( self ) :
+         dx = ( self._touches[0].px - self._touches[0].x )/( self.xpp )
+         dy = ( self._touches[0].py - self._touches[0].y )/( self.ypp )
+         self.xRange = self.xRange[0]+dx, self.xRange[1]+dx
+         self.yRange = self.yRange[0]+dy, self.yRange[1]+dy
+         self.evalPoints()
+
+    def pinchZoom( self ) :
+         d0x = ( self._touches[0].ox - self._touches[1].ox ) / self.xpp
+         d0y = ( self._touches[0].oy - self._touches[1].oy ) / self.ypp
+         d1x = ( self._touches[0].x - self._touches[1].x ) / self.xpp
+         d1y = ( self._touches[0].y - self._touches[1].y ) / self.ypp
+         dx = ( d0x - d1x ) / self.pinchWeight
+         dy = ( d0y - d1y ) / self.pinchWeight
+         newXRange = self.xRange[0]-dx, self.xRange[1]+dx
+         newYRange = self.yRange[0]-dy, self.yRange[1]+dy
+
+         if ( abs(dx) > abs(dy) ) and newXRange[1]-newXRange[0] >= 2 :
+             self.xRange = newXRange
+         elif ( abs(dy) > abs(dx) ) and newYRange[1]-newYRange[0] >= 2 :
+             self.yRange = newYRange
+         self.setupXYpp()
+         self.evalPoints()
     
     def on_touch_down( self, touch ) :
         #add the touch to a special list
@@ -170,24 +202,6 @@ class Plotter( Widget ) :
             self.movePlot()
         elif len( self._touches ) == 2 :
             self.pinchZoom() 
-
-    def movePlot( self ) :
-         dx = ( self._touches[0].px - self._touches[0].x )/( self.xpp )
-         dy = ( self._touches[0].py - self._touches[0].y )/( self.ypp )
-         self.xRange = self.xRange[0]+dx, self.xRange[1]+dx
-         self.yRange = self.yRange[0]+dy, self.yRange[1]+dy
-         self.evalPoints()
-
-    def pinchZoom( self ) :
-         d0x = ( self._touches[0].ox - self._touches[1].ox )
-         d0y = ( self._touches[0].oy - self._touches[1].oy )
-         d1x = ( self._touches[0].x - self._touches[1].x )
-         d1y = ( self._touches[0].y - self._touches[1].y )
-         dx = d0x - d1x
-         dy = d0x - d1x
-         self.xRange = self.xRange[0]-dx/2, self.xRange[1]+dx/2
-         self.yRange = self.yRange[0]-dy/2, self.yRange[1]+dy/2
-         self.evalPoints()
 
 
 class PlottingOptionPanel( Popup ) :

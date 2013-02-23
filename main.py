@@ -35,7 +35,6 @@ class KiPyCalc( BoxLayout ) :
         options = self.plottingOptionPanel.dismiss()
         if options != None :
             self.plotter = Plotter( eval( self.shell.kb.current.text ), \
-                                    #[ self.width/2, self.height/2 ], \
                                     options ) 
             self.clear_widgets()
             self.add_widget( self.plotter )
