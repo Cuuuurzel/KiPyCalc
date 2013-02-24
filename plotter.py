@@ -207,6 +207,7 @@ class Plotter( Widget ) :
 class PlottingOptionPanel( Popup ) :
     
     errorsBefore = BooleanProperty( False )
+    wrongExpression = BooleanProperty( False )
 
     def __init__( self, onConfirm ) :
         w = float( Config.get( 'graphics', 'width' ) )
@@ -259,24 +260,25 @@ class PlottingOptionPanel( Popup ) :
                               size_hint = ( 0.95,0.95 ) )
 
     def open( self, someExpression ) : 
-        self.expLabel.text = someExpression
+        try : 
+            f = lambdify( eval(someExpression), x )
+            self.expLabel.text = someExpression
+            self.wrongExpression = False
+        except : 
+            self.expLabel.text = "The expression is not valid!!" 
+            self.wrongExpression = True           
         Popup.open( self )
 
     def dismiss( self, forced=False ) :
         if not forced : 
-            try :
-                self.errorsBefore = False
-                Popup.dismiss( self ) 
-                config = { "axisColor" : self.colors[0].rgb(), \
-                           "bgColor"   : self.colors[1].rgb(), \
-                           "plotColor" : self.colors[2].rgb(), \
-                           "x" : self.totx.value, \
-                           "y" : self.toty.value , \
-                           "step" : self.step.value }
-                return config
-            except ValueError : 
-                if not self.errorsBefore : 
-                    self.errorsBefore = True
-                    self.expLabel.text += "\nCheck your input please!!"
+            self.errorsBefore = False
+            Popup.dismiss( self ) 
+            config = { "axisColor" : self.colors[0].rgb(), \
+                       "bgColor"   : self.colors[1].rgb(), \
+                       "plotColor" : self.colors[2].rgb(), \
+                       "x"         : self.totx.value, \
+                       "y"         : self.toty.value , \
+                       "step"      : self.step.value }
+            return config
         else : 
             Popup.dismiss( self )

@@ -33,7 +33,7 @@ class KiPyCalc( BoxLayout ) :
 
     def onPlotConfirm( self, instance ) :
         options = self.plottingOptionPanel.dismiss()
-        if options != None :
+        if options != None and not self.plottingOptionPanel.wrongExpression :
             self.plotter = Plotter( eval( self.shell.kb.current.text ), \
                                     options ) 
             self.clear_widgets()

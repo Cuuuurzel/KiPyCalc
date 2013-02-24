@@ -76,7 +76,7 @@ class KiPyKeyboard( BoxLayout ) :
     def loadStaticKeys( self ) :
         k1 = "<- space tab \\n ->".split( " " )
         k2 = "{ [ ( , ) ] }".split( " " )
-        k3 = "evalf print undo about shift".split( " " )
+        k3 = "evalf print undo shift".split( " " )
         k4 = "+ - * / ** =".split( " " ) + [ u"√" ]
         default_keys = ( k1, k2, k3, k4 )
 

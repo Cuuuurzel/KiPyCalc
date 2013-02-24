@@ -122,6 +122,30 @@ class Plotter( Widget ) :
             except Exception : pass
             x += self.step
         self.points = points
+
+    def movePlot( self ) :
+         dx = ( self._touches[0].px - self._touches[0].x )/( self.xpp )
+         dy = ( self._touches[0].py - self._touches[0].y )/( self.ypp )
+         self.xRange = self.xRange[0]+dx, self.xRange[1]+dx
+         self.yRange = self.yRange[0]+dy, self.yRange[1]+dy
+         self.evalPoints()
+
+    def pinchZoom( self ) :
+         d0x = ( self._touches[0].ox - self._touches[1].ox ) / self.xpp
+         d0y = ( self._touches[0].oy - self._touches[1].oy ) / self.ypp
+         d1x = ( self._touches[0].x - self._touches[1].x ) / self.xpp
+         d1y = ( self._touches[0].y - self._touches[1].y ) / self.ypp
+         dx = ( d0x - d1x ) / self.pinchWeight
+         dy = ( d0y - d1y ) / self.pinchWeight
+         newXRange = self.xRange[0]-dx, self.xRange[1]+dx
+         newYRange = self.yRange[0]-dy, self.yRange[1]+dy
+
+         if ( abs(dx) > abs(dy) ) and newXRange[1]-newXRange[0] >= 2 :
+             self.xRange = newXRange
+         elif ( abs(dy) > abs(dx) ) and newYRange[1]-newYRange[0] >= 2 :
+             self.yRange = newYRange
+         self.setupXYpp()
+         self.evalPoints()
     
     def on_touch_down( self, touch ) :
         #add the touch to a special list
@@ -179,34 +203,11 @@ class Plotter( Widget ) :
         elif len( self._touches ) == 2 :
             self.pinchZoom() 
 
-    def movePlot( self ) :
-         dx = ( self._touches[0].px - self._touches[0].x )/( self.xpp )
-         dy = ( self._touches[0].py - self._touches[0].y )/( self.ypp )
-         self.xRange = self.xRange[0]+dx, self.xRange[1]+dx
-         self.yRange = self.yRange[0]+dy, self.yRange[1]+dy
-         self.evalPoints()
-
-    def pinchZoom( self ) :
-         d0x = ( self._touches[0].ox - self._touches[1].ox ) / self.xpp
-         d0y = ( self._touches[0].oy - self._touches[1].oy ) / self.ypp
-         d1x = ( self._touches[0].x - self._touches[1].x ) / self.xpp
-         d1y = ( self._touches[0].y - self._touches[1].y ) / self.ypp
-         dx = ( d0x - d1x ) / self.pinchWeight
-         dy = ( d0y - d1y ) / self.pinchWeight
-         newXRange = self.xRange[0]-dx, self.xRange[1]+dx
-         newYRange = self.yRange[0]-dy, self.yRange[1]+dy
-
-         if newXRange[1]-newXRange[0] >= 2 :
-             self.xRange = newXRange
-         if newYRange[1]-newYRange[0] >= 2 :
-             self.yRange = newYRange
-         self.setupXYpp()
-         self.evalPoints()
-
 
 class PlottingOptionPanel( Popup ) :
     
     errorsBefore = BooleanProperty( False )
+    wrongExpression = BooleanProperty( False )
 
     def __init__( self, onConfirm ) :
         w = float( Config.get( 'graphics', 'width' ) )
@@ -259,7 +260,13 @@ class PlottingOptionPanel( Popup ) :
                               size_hint = ( 0.95,0.95 ) )
 
     def open( self, someExpression ) : 
-        self.expLabel.text = someExpression
+        try : 
+            f = lambdify( eval(someExpression), x )
+            self.expLabel.text = someExpression
+            self.wrongExpression = False
+        except : 
+            self.expLabel.text = "Sembra che l'espressione inserita non sia valida!!" 
+            self.wrongExpression = True           
         Popup.open( self )
 
     def dismiss( self, forced=False ) :
@@ -270,13 +277,13 @@ class PlottingOptionPanel( Popup ) :
                 config = { "axisColor" : self.colors[0].rgb(), \
                            "bgColor"   : self.colors[1].rgb(), \
                            "plotColor" : self.colors[2].rgb(), \
-                           "x" : self.totx.value, \
-                           "y" : self.toty.value , \
-                           "step" : self.step.value }
+                           "x"         : self.totx.value, \
+                           "y"         : self.toty.value , \
+                           "step"      : self.step.value }
                 return config
             except ValueError : 
                 if not self.errorsBefore : 
                     self.errorsBefore = True
-                    self.expLabel.text += "\nCheck your input please!!"
+                    self.expLabel.text += "\nControlla bene i dati inseriti!"
         else : 
             Popup.dismiss( self )
