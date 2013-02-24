@@ -12,9 +12,9 @@ import sys
 
 from keyboard import *
 
-DEBUG = False
-FONT_NAME = "res/font/ubuntu-mono/UbuntuMono-R.ttf"
-FONT_SIZE = 20
+DEBUG = True
+FONT_NAME = "res/font/tt/unispace rg.ttf"
+FONT_SIZE = 16
 
 class PyShell( BoxLayout ) :
 

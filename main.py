@@ -5,13 +5,9 @@ from kivy.app import App
 from kivy.base import EventLoop
 from kivy.config import Config
 from kivy.uix.boxlayout import BoxLayout
-
 from shell import *
 from plotter import *
 from kivyextras import *
-
-FONT_NAME = "res/font/ubuntu-mono/UbuntuMono-R.ttf"
-FONT_SIZE = 24
 
 class KiPyCalc( BoxLayout ) :
 

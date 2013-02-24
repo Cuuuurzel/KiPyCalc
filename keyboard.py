@@ -7,8 +7,8 @@ from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
 
-FONT_NAME = "res/font/ubuntu-mono/UbuntuMono-R.ttf"
-FONT_SIZE = 24
+FONT_NAME = "res/font/tt/unispace rg.ttf"
+FONT_SIZE = 20
 
 def loadButtonsFromString( someWidget, names, onPress ) :
     for name in names : 
@@ -24,7 +24,7 @@ class KiPyKeyboard( BoxLayout ) :
         BoxLayout.__init__( self, orientation="vertical" )
         inp = BoxLayout( orientation="horizontal" )
         inp.padding = 1
-        self.current = TextInput()
+        self.current = TextInput( text=u"" )
         self.current.font_name = FONT_NAME
         self.current.font_size = FONT_SIZE
         self.current.size_hint = 0.85, 1
@@ -132,7 +132,7 @@ class KiPyKeyboard( BoxLayout ) :
         elif command == "Ln" :   toInsert = "ln( x, E )"
         elif command == "evalf" : toInsert = ".evalf()"
         elif command == u"π" :    toInsert = "pi"
-        elif command == "clear" : self.current.text = ""
+        elif command == "clear" : self.current.text = u""
         elif command == "space" : toInsert = " "
         elif command == "ans" :   toInsert = "ANS"
         elif command == "shift" : self.onShift()

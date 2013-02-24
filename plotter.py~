@@ -2,7 +2,7 @@
 
 from kivy.app import App
 from kivy.config import Config
-from kivy.graphics import Color, Rectangle, Point, GraphicException
+import kivy.graphics as kg
 from kivy.lang import Builder
 from kivy.properties import BooleanProperty, ListProperty, NumericProperty
 from kivy.uix.boxlayout import BoxLayout
@@ -16,13 +16,14 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
 from kivyextras import ColorChooser, NumericUpDown
 from math import sqrt
+from sympy import *
 from sympy.abc import *
 from sympy.utilities.lambdify import lambdify
 from random import random
 
 Builder.load_file( "kipycalc.kv" )
 
-def calculate_points(x1, y1, x2, y2, steps=5):
+def calculate_Points(x1, y1, x2, y2, steps=5):
     dx = x2 - x1
     dy = y2 - y1
     dist = sqrt(dx * dx + dy * dy)
@@ -155,8 +156,8 @@ class Plotter( Widget ) :
         ud['group'] = g = str( touch.uid )
         #add new canvas instructions for it
         with self.canvas:
-            ud['color'] = Color(random(), 1, 1, mode='hsv', group=g)
-            ud['lines'] = ( Point( points=(touch.x, touch.y), pointsize=self.axisWidth, group=g ) )
+            ud['kg.Color'] = kg.Color(random(), 1, 1, mode='hsv', group=g)
+            ud['lines'] = ( kg.Point( points=(touch.x, touch.y), pointsize=self.axisWidth, group=g ) )
         #grab it
         touch.grab(self)
         return True
@@ -182,13 +183,13 @@ class Plotter( Widget ) :
         #add new points to the canvas 
         points = ud['lines'].points
         oldx, oldy = points[-2], points[-1]
-        points = calculate_points(oldx, oldy, touch.x, touch.y)
+        points = calculate_Points(oldx, oldy, touch.x, touch.y)
         if points:
             try:
                 lp = ud['lines'].add_point
                 for idx in xrange(0, len(points), 2):
                     lp(points[idx], points[idx+1])
-            except GraphicException:
+            except kg.GraphicException:
                 pass
         #update touch living time
         import time
@@ -261,29 +262,25 @@ class PlottingOptionPanel( Popup ) :
 
     def open( self, someExpression ) : 
         try : 
-            f = lambdify( eval(someExpression), x )
+            print( someExpression )
+            f = lambdify( x, eval(someExpression) )
             self.expLabel.text = someExpression
             self.wrongExpression = False
         except : 
-            self.expLabel.text = "Sembra che l'espressione inserita non sia valida!!" 
+            self.expLabel.text = "The expression is not valid!!" 
             self.wrongExpression = True           
         Popup.open( self )
 
     def dismiss( self, forced=False ) :
         if not forced : 
-            try :
-                self.errorsBefore = False
-                Popup.dismiss( self ) 
-                config = { "axisColor" : self.colors[0].rgb(), \
-                           "bgColor"   : self.colors[1].rgb(), \
-                           "plotColor" : self.colors[2].rgb(), \
-                           "x"         : self.totx.value, \
-                           "y"         : self.toty.value , \
-                           "step"      : self.step.value }
-                return config
-            except ValueError : 
-                if not self.errorsBefore : 
-                    self.errorsBefore = True
-                    self.expLabel.text += "\nControlla bene i dati inseriti!"
+            self.errorsBefore = False
+            Popup.dismiss( self ) 
+            config = { "axisColor" : self.colors[0].rgb(), \
+                       "bgColor"   : self.colors[1].rgb(), \
+                       "plotColor" : self.colors[2].rgb(), \
+                       "x"         : self.totx.value, \
+                       "y"         : self.toty.value , \
+                       "step"      : self.step.value }
+            return config
         else : 
             Popup.dismiss( self )
