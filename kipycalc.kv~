@@ -21,4 +21,8 @@
             points: [ (-self.xRange[0])*self.xpp, 0, (-self.xRange[0])*self.xpp, self.height ]
         Line:
             width: self.axisWidth
-            points: [ 0, (-self.yRange[0])*self.xpp, self.width, (-self.yRange[0])*self.ypp ]
+            points: [ 0, (-self.yRange[0])*self.ypp, self.width, (-self.yRange[0])*self.ypp ]
+
+    Label:
+        text: self.parent.text
+        center: self.parent.center_x, 7*self.parent.top/8

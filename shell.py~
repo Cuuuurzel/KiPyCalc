@@ -12,7 +12,7 @@ import sys
 
 from keyboard import *
 
-DEBUG = False
+DEBUG = True
 FONT_NAME = "res/font/tt/unispace rg.ttf"
 FONT_SIZE = 16
 
@@ -25,11 +25,11 @@ class PyShell( BoxLayout ) :
         self.listed = TextInput()
         self.listed.font_name = FONT_NAME
         self.listed.readonly = True
-        self.listed.size_hint = 1, 0.2
+        self.listed.size_hint = 1, 0.3
         self.listed.font_size = FONT_SIZE
         frm.add_widget( self.listed )
         self.kb = KiPyKeyboard( self.onBtnExecPress, plotFoo )
-        self.kb.size_hint = 1, 0.8
+        self.kb.size_hint = 1, 0.7
         frm.add_widget( self.kb )
         frm.size_hint = 1,1
         self.add_widget( frm )

@@ -8,7 +8,7 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
 
 FONT_NAME = "res/font/tt/unispace rg.ttf"
-FONT_SIZE = 20
+FONT_SIZE = 18
 
 def loadButtonsFromString( someWidget, names, onPress ) :
     for name in names : 
