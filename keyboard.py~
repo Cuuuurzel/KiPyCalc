@@ -24,7 +24,7 @@ class KiPyKeyboard( BoxLayout ) :
         BoxLayout.__init__( self, orientation="vertical" )
         inp = BoxLayout( orientation="horizontal" )
         inp.padding = 1
-        self.current = TextInput( text="x**3" )
+        self.current = TextInput()
         self.current.font_name = FONT_NAME
         self.current.font_size = FONT_SIZE
         self.current.size_hint = 0.85, 1
@@ -76,7 +76,7 @@ class KiPyKeyboard( BoxLayout ) :
     def loadStaticKeys( self ) :
         k1 = "<- space tab \\n ->".split( " " )
         k2 = "{ [ ( , ) ] }".split( " " )
-        k3 = "evalf print undo about shift".split( " " )
+        k3 = "evalf print undo clear shift".split( " " )
         k4 = "+ - * / ** =".split( " " ) + [ u"√" ]
         default_keys = ( k1, k2, k3, k4 )
 
