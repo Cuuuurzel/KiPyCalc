@@ -237,7 +237,7 @@ class PlottingOptionPanel( Popup ) :
 
         toty = BoxLayout( orientation="vertical" )
         toty.add_widget( Label( text="Y to display :" ) )
-        self.toty = NumericUpDown( vmin=2, value=w/16, vstep=1 )
+        self.toty = NumericUpDown( vmin=2, value=h/16, vstep=1 )
         toty.add_widget( self.toty )
 
         step = BoxLayout( orientation="vertical" )
