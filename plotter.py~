@@ -111,12 +111,14 @@ class Plotter( Widget ) :
             self.step = xToDisplay / float( self.width )
 
     def evalPoints( self ) :
+        miny = 3*self.yRange[0]/2.0
+        maxy = 3*self.yRange[1]/2.0
         points = []
         x = self.xRange[0]
         while x < self.xRange[1] : 
             try :
                 y = self.foo( x )
-                if self.yRange[0] < y < self.yRange[1] :
+                if miny < y < maxy :
                     px = ( x - self.xRange[0] ) * self.xpp
                     py = ( y - self.yRange[0] ) * self.ypp
                     points.append( px )
