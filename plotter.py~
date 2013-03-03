@@ -60,6 +60,7 @@ class Plotter( Widget ) :
     _foo_zeros = ObjectProperty( None )
     _foo_x_to_zero = ObjectProperty( None )
     _derivative_zeros = ObjectProperty( None )
+    touching = BooleanProperty( False )
 
     def __init__( self, foo, config ) : 
         Widget.__init__( self )
@@ -116,7 +117,7 @@ class Plotter( Widget ) :
                     self._labels.append( lbl )
                     self.add_widget( lbl )
         #y axis
-        if not self._foo_x_to_zero is None :
+        if not self._foo_x_to_zero is None and self._foo_x_to_zero.is_real :
             yi = self._foo_x_to_zero #self._sympyfoo.subs( x, 0 ).evalf()  
             p = ( 0, int( (yi-self.yRange[0]) * self.ypp ),\
                   self.width, int( (yi-self.yRange[0]) * self.ypp ) )              
@@ -226,7 +227,7 @@ class Plotter( Widget ) :
             except : pass
             x += self.step
         self.points = points
-        self.evalSpecialPoints()
+        if not self.touching : self.evalSpecialPoints()
 
     def movePlot( self ) :
         dx = ( self._touches[0].px - self._touches[0].x )/( self.xpp )

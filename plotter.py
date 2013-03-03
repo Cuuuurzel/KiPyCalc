@@ -60,6 +60,7 @@ class Plotter( Widget ) :
     _foo_zeros = ObjectProperty( None )
     _foo_x_to_zero = ObjectProperty( None )
     _derivative_zeros = ObjectProperty( None )
+    touching = BooleanProperty( False )
 
     def __init__( self, foo, config ) : 
         Widget.__init__( self )
@@ -226,7 +227,7 @@ class Plotter( Widget ) :
             except : pass
             x += self.step
         self.points = points
-        self.evalSpecialPoints()
+        if not self.touching : self.evalSpecialPoints()
 
     def movePlot( self ) :
         dx = ( self._touches[0].px - self._touches[0].x )/( self.xpp )
@@ -254,6 +255,7 @@ class Plotter( Widget ) :
     
     def on_touch_down( self, touch ) :
         #add the touch to a special list
+        self.touching = True
         self._touches.append( touch )
         #prepare its user data
         ud = touch.ud
@@ -274,6 +276,7 @@ class Plotter( Widget ) :
 
     def on_touch_up( self, touch ) :
         #remove the touch from the list
+        self.touching = False
         for t in self._touches :
             if t.uid == touch.uid:
                 self._touches.remove( t )

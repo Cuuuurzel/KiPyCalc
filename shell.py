@@ -12,7 +12,7 @@ import sys
 
 from keyboard import *
 
-DEBUG = True
+DEBUG = False
 FONT_NAME = "res/font/tt/unispace rg.ttf"
 FONT_SIZE = 16
 
