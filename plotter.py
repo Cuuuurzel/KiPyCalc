@@ -56,15 +56,110 @@ class Plotter( Widget ) :
     text = StringProperty( "" )
     _touches = ListProperty( [] )
     _stepAuto = BooleanProperty( True )
+    _sympyfoo = BooleanProperty( True )
+    _labels = ListProperty( [] )
 
     def __init__( self, foo, config ) : 
         Widget.__init__( self )
         self.width = float( Config.get( 'graphics', 'width' ) )
         self.height = float( Config.get( 'graphics', 'height' ) )
         self.expr = foo
+        self._sympyfoo = foo
         self.foo = lambdify( x, foo ) 
         self.setup( config )
         self.evalPoints()  
+
+    def evalSpecialPoints( self ) :
+        #cleaning
+        self.canvas.remove_group( "intersections" )
+        self.canvas.remove_group( "minandmax" )
+        for lbl in self._labels : self.remove_widget( lbl ) 
+
+        self.evalIntersections()
+        self.evalMinAndMax()
+
+    def evalIntersections( self ) :
+        #settings
+        dl = 1
+        do = 5
+        with self.canvas :                     
+            kg.Color( self.axisColor, group="intersections" )
+        #x axis
+        s = solve( self._sympyfoo, x )
+        for xi in s :
+            if xi.is_real and self.xRange[0]<xi<self.xRange[1] :
+                xi = xi.evalf()
+                p = ( int( (xi-self.xRange[0]) * self.xpp ), 0,\
+                      int( (xi-self.xRange[0]) * self.xpp ), self.height )                  
+                t = "[color=ff0000]%.2f[/color]" % ( xi )
+                with self.canvas :   
+                    kg.Line( dash_lenght=dl, dash_offset=do,\
+                             points=p, width=self.axisWidth,\
+                             group="intersections" )
+                    kg.Point( pointsize=self.plotWidth*2,\
+                              points=[ (xi-self.xRange[0])*self.xpp, -self.yRange[0]*self.ypp ],\
+                              group="intersections" )
+                lbl = Label( center=(p[0],9*self.height/10.0), text=t, markup=True )
+                self._labels.append( lbl )
+                self.add_widget( lbl )
+        #y axis
+        try : 
+            yi = self._sympyfoo.subs( x, 0 ).evalf()  
+            p = ( 0, int( (yi-self.yRange[0]) * self.ypp ),\
+                  self.width, int( (yi-self.yRange[0]) * self.ypp ) )              
+            t = "[color=ff0000]%.2f[/color]" % ( yi )
+            with self.canvas :   
+                kg.Line( dash_lenght=dl, dash_offset=do,\
+                         points=p, width=self.axisWidth,\
+                         group="intersections" )
+                kg.Point( pointsize=self.plotWidth*2,\
+                          points=[ -self.xRange[0]*self.xpp, (yi-self.yRange[0])*self.ypp ],\
+                          group="intersections" )
+            lbl = Label( center=(4*self.width/5.0, p[1]), text=t, markup=True )
+            self._labels.append( lbl )
+            self.add_widget( lbl )
+        except : 
+            pass
+     
+    def evalMinAndMax( self ) : 
+        #settings
+        dl = 1
+        do = 5
+        with self.canvas :                     
+            kg.Color( self.axisColor, group="minandmax" )
+        #stationary points
+        try : 
+            derivative = self._sympyfoo.diff( x )
+            s = solve( derivative, x )
+            for xi in s : 
+                if xi.is_real and self.xRange[0]<xi<self.xRange[1] :
+                    xi = xi.evalf()
+                    try : 
+                        yi = self.foo( xi )
+                        px = ( int( (xi-self.xRange[0]) * self.xpp ), 0,\
+                               int( (xi-self.xRange[0]) * self.xpp ), self.height )                  
+                        tx = "[color=ff0000]%.2f[/color]" % ( xi )
+                        py = ( 0, int( (yi-self.yRange[0]) * self.ypp ),\
+                               self.width, int( (yi-self.yRange[0]) * self.ypp ) )              
+                        ty = "[color=ff0000]%.2f[/color]" % ( yi )
+                        with self.canvas :   
+                            kg.Line( dash_lenght=dl, dash_offset=do,\
+                                     points=px, width=self.axisWidth,\
+                                     group="minandmax" )
+                            kg.Line( dash_lenght=dl, dash_offset=do,\
+                                     points=py, width=self.axisWidth,\
+                                     group="minandmax" )
+                            kg.Point( pointsize=self.plotWidth*2,\
+                                      points=[ (xi-self.xRange[0])*self.xpp, (yi-self.yRange[0])*self.ypp ],\
+                                      group="minandmax" )
+                        lbl = Label( center=(px[0],9*self.height/10.0), text=tx, markup=True )
+                        self._labels.append( lbl )
+                        lbl = Label( center=(4*self.width/5.0, py[1]), text=ty, markup=True )
+                        self._labels.append( lbl )
+                        self.add_widget( lbl )
+                    except : pass
+        except : pass
+
 
     def setup( self, config ) : 
         xToDisplay = 2
@@ -120,9 +215,10 @@ class Plotter( Widget ) :
                 py = ( y - self.yRange[0] ) * self.ypp
                 points.append( px )
                 points.append( py )
-            except Exception : pass
+            except : pass
             x += self.step
         self.points = points
+        self.evalSpecialPoints()
 
     def movePlot( self ) :
         dx = ( self._touches[0].px - self._touches[0].x )/( self.xpp )
@@ -138,8 +234,8 @@ class Plotter( Widget ) :
         d1y = abs( self._touches[0].y - self._touches[1].y ) / self.ypp
         dx = ( d0x - d1x ) / self.pinchWeight
         dy = ( d0y - d1y ) / self.pinchWeight
-        newXRange = self.xRange[0]+dx, self.xRange[1]-dx
-        newYRange = self.yRange[0]+dy, self.yRange[1]-dy
+        newXRange = self.xRange[0]-dx, self.xRange[1]+dx
+        newYRange = self.yRange[0]-dy, self.yRange[1]+dy
 
         if ( abs(dx) > abs(dy) ) and newXRange[1]-newXRange[0] >= 2 :
             self.xRange = newXRange
@@ -161,11 +257,11 @@ class Plotter( Widget ) :
         #grab it
         touch.grab(self)        
         #display the x,y coordinates of the point
-        if len( self._touches ) == 1 :
-            px = self.xRange[0] + self._touches[0].x/self.xpp
-            py = self.yRange[0] + self._touches[0].y/self.ypp
-            self.text = str( px ) + ", " + str( py )
-        else : self.text = ""
+        #if len( self._touches ) == 1 :
+        #    px = self.xRange[0] + self._touches[0].x/self.xpp
+        #    py = self.yRange[0] + self._touches[0].y/self.ypp
+        #    self.text = str( px ) + ", " + str( py )
+        #else : self.text = ""
         return True
 
     def on_touch_up( self, touch ) :
