@@ -15,6 +15,7 @@ from kivy.uix.slider import Slider
 from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
 from kivyextras import ColorChooser, NumericUpDown
+from time import time
 from math import sqrt
 from sympy import *
 from sympy.abc import *
@@ -227,7 +228,8 @@ class Plotter( Widget ) :
             except : pass
             x += self.step
         self.points = points
-        if not self.touching : self.evalSpecialPoints()
+        if not self.touching : 
+            self.evalSpecialPoints()
 
     def movePlot( self ) :
         dx = ( self._touches[0].px - self._touches[0].x )/( self.xpp )
@@ -255,7 +257,6 @@ class Plotter( Widget ) :
     
     def on_touch_down( self, touch ) :
         #add the touch to a special list
-        self.touching = True
         self._touches.append( touch )
         #prepare its user data
         ud = touch.ud
@@ -266,17 +267,10 @@ class Plotter( Widget ) :
             ud['lines'] = kg.Point( points=(touch.x, touch.y), pointsize=self.axisWidth, group=g )
         #grab it
         touch.grab(self)        
-        #display the x,y coordinates of the point
-        #if len( self._touches ) == 1 :
-        #    px = self.xRange[0] + self._touches[0].x/self.xpp
-        #    py = self.yRange[0] + self._touches[0].y/self.ypp
-        #    self.text = str( px ) + ", " + str( py )
-        #else : self.text = ""
         return True
 
     def on_touch_up( self, touch ) :
         #remove the touch from the list
-        self.touching = False
         for t in self._touches :
             if t.uid == touch.uid:
                 self._touches.remove( t )
@@ -287,8 +281,11 @@ class Plotter( Widget ) :
         ud = touch.ud
         #and the delete its canvas instructions
         self.canvas.remove_group( ud['group'] )
+        self.touching = False
+        self.evalPoints()
 
     def on_touch_move( self, touch ) :
+        self.touching = True
         #check if the touch is attached to this widget and get user data
         if touch.grab_current is not self:
             return
@@ -305,8 +302,7 @@ class Plotter( Widget ) :
             except kg.GraphicException:
                 pass
         #update touch living time
-        import time
-        t = int(time.time())
+        t = int(time())
         if t not in ud:
             ud[t] = 1
         else:
