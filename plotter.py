@@ -4,7 +4,7 @@ from kivy.app import App
 from kivy.config import Config
 import kivy.graphics as kg
 from kivy.lang import Builder
-from kivy.properties import BooleanProperty, ListProperty, NumericProperty, StringProperty
+from kivy.properties import BooleanProperty, ListProperty, NumericProperty, ObjectProperty, StringProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.checkbox import CheckBox
@@ -56,17 +56,31 @@ class Plotter( Widget ) :
     text = StringProperty( "" )
     _touches = ListProperty( [] )
     _stepAuto = BooleanProperty( True )
-    _sympyfoo = BooleanProperty( True )
     _labels = ListProperty( [] )
+    _foo_zeros = ObjectProperty( None )
+    _foo_x_to_zero = ObjectProperty( None )
+    _derivative_zeros = ObjectProperty( None )
 
     def __init__( self, foo, config ) : 
         Widget.__init__( self )
         self.width = float( Config.get( 'graphics', 'width' ) )
         self.height = float( Config.get( 'graphics', 'height' ) )
         self.expr = foo
-        self._sympyfoo = foo
-        self.foo = lambdify( x, foo ) 
+
+        try : 
+            self._foo_zeros = solve( foo, x )
+        except : pass        
+        try : 
+            self._foo_x_to_zero = foo.subs( x, 0 ).evalf()  
+            if not self._foo_x_to_zero.is_real : self._foo_x_to_zero = None
+        except : pass
+        try : 
+            self._derivative_zeros = solve( foo.diff( x ), x )
+        except : pass        
+
+        self.foo = lambdify( x, foo )        
         self.setup( config )
+        self.evalPoints()  
         self.evalPoints()  
 
     def evalSpecialPoints( self ) :
@@ -74,7 +88,6 @@ class Plotter( Widget ) :
         self.canvas.remove_group( "intersections" )
         self.canvas.remove_group( "minandmax" )
         for lbl in self._labels : self.remove_widget( lbl ) 
-
         self.evalIntersections()
         self.evalMinAndMax()
 
@@ -85,26 +98,26 @@ class Plotter( Widget ) :
         with self.canvas :                     
             kg.Color( self.axisColor, group="intersections" )
         #x axis
-        s = solve( self._sympyfoo, x )
-        for xi in s :
-            if xi.is_real and self.xRange[0]<xi<self.xRange[1] :
-                xi = xi.evalf()
-                p = ( int( (xi-self.xRange[0]) * self.xpp ), 0,\
-                      int( (xi-self.xRange[0]) * self.xpp ), self.height )                  
-                t = "[color=ff0000]%.2f[/color]" % ( xi )
-                with self.canvas :   
-                    kg.Line( dash_lenght=dl, dash_offset=do,\
-                             points=p, width=self.axisWidth,\
-                             group="intersections" )
-                    kg.Point( pointsize=self.plotWidth*2,\
-                              points=[ (xi-self.xRange[0])*self.xpp, -self.yRange[0]*self.ypp ],\
-                              group="intersections" )
-                lbl = Label( center=(p[0],9*self.height/10.0), text=t, markup=True )
-                self._labels.append( lbl )
-                self.add_widget( lbl )
+        if not self._foo_zeros is None :
+            for xi in self._foo_zeros :
+                if xi.is_real and self.xRange[0]<xi<self.xRange[1] :
+                    xi = xi.evalf()
+                    p = ( int( (xi-self.xRange[0]) * self.xpp ), 0,\
+                          int( (xi-self.xRange[0]) * self.xpp ), self.height )                  
+                    t = "[color=ff0000]%.2f[/color]" % ( xi )
+                    with self.canvas :   
+                        kg.Line( dash_lenght=dl, dash_offset=do,\
+                                 points=p, width=self.axisWidth,\
+                                 group="intersections" )
+                        kg.Point( pointsize=self.plotWidth*2,\
+                                  points=[ (xi-self.xRange[0])*self.xpp, -self.yRange[0]*self.ypp ],\
+                                  group="intersections" )
+                    lbl = Label( center=(p[0],9*self.height/10.0), text=t, markup=True )
+                    self._labels.append( lbl )
+                    self.add_widget( lbl )
         #y axis
-        try : 
-            yi = self._sympyfoo.subs( x, 0 ).evalf()  
+        if not self._foo_x_to_zero is None and self._foo_x_to_zero.is_real :
+            yi = self._foo_x_to_zero #self._sympyfoo.subs( x, 0 ).evalf()  
             p = ( 0, int( (yi-self.yRange[0]) * self.ypp ),\
                   self.width, int( (yi-self.yRange[0]) * self.ypp ) )              
             t = "[color=ff0000]%.2f[/color]" % ( yi )
@@ -118,8 +131,6 @@ class Plotter( Widget ) :
             lbl = Label( center=(4*self.width/5.0, p[1]), text=t, markup=True )
             self._labels.append( lbl )
             self.add_widget( lbl )
-        except : 
-            pass
      
     def evalMinAndMax( self ) : 
         #settings
@@ -128,10 +139,8 @@ class Plotter( Widget ) :
         with self.canvas :                     
             kg.Color( self.axisColor, group="minandmax" )
         #stationary points
-        try : 
-            derivative = self._sympyfoo.diff( x )
-            s = solve( derivative, x )
-            for xi in s : 
+        if not self._derivative_zeros is None :
+            for xi in self._derivative_zeros : 
                 if xi.is_real and self.xRange[0]<xi<self.xRange[1] :
                     xi = xi.evalf()
                     try : 
@@ -158,7 +167,6 @@ class Plotter( Widget ) :
                         self._labels.append( lbl )
                         self.add_widget( lbl )
                     except : pass
-        except : pass
 
 
     def setup( self, config ) : 
