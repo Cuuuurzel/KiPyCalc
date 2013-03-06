@@ -4,7 +4,6 @@ from code import InteractiveConsole
 from kivy.app import App
 from kivy.base import EventLoop
 from kivy.config import Config
-from kivy.settings import Settings
 from kivy.uix.boxlayout import BoxLayout
 from shell import *
 from plotter import *
@@ -54,21 +53,17 @@ class KiPyCalcApp( App ) :
     title = 'KiPyCalc'
     
     def build( self ) :
-        
         self.kpc = KiPyCalc()
         self.kpc.start()
         EventLoop.window.bind( on_keyboard=self.hook_keyboard )
         return self.kpc
-        """
-        s = Settings()
-        s.add_json_panel('My custom panel', {}, 'settings_custom.json')
-        #s.add_json_panel('Another panel', config, 'settings_test2.json')
-        return s
-        """
 
     def hook_keyboard( self, window, key, *largs ):
-        if key == 27 :
+        if key == 27 : #return (esc) key
             return self.kpc.onReturnKey() 
+        if key == 319 : #menu key
+            return self.kpc.onMenuKey() 
+        
 
     def on_pause( self ) : 
          return True
