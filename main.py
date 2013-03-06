@@ -56,8 +56,10 @@ class KiPyCalc( BoxLayout ) :
     def onMenuKey( self ) :
         if self.mode == "plot" :
             self.onPlotRequest( None )
+            return True
         elif self.mode == "calc" : 
             self.onHelpRequest()
+            return True
 
 
 class KiPyCalcApp( App ) : 
