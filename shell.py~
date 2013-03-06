@@ -12,8 +12,8 @@ import sys
 
 from keyboard import *
 
-DEBUG = True
-#DEBUG = False
+#DEBUG = True
+DEBUG = False
 FONT_NAME = "res/font/tt/unispace rg.ttf"
 FONT_SIZE = 16
 
@@ -53,12 +53,13 @@ class PyShell( BoxLayout ) :
         if not DEBUG :
             sys.stdout = self
             sys.stderr = self
-        self.loadBuiltins()
+        self.shellInit()
 
-    def loadBuiltins( self ) :
+    def shellInit( self ) :
         self.console.push( "from math import *\n" )
         self.console.push( "from sympy import *\n" )
         self.console.push( "from sympy.abc import *\n" )
+        self.console.push( "from __future__ import division\n" )
 
     def write( self, sometext ) :
         self.listed.text += sometext

@@ -53,12 +53,13 @@ class PyShell( BoxLayout ) :
         if not DEBUG :
             sys.stdout = self
             sys.stderr = self
-        self.loadBuiltins()
+        self.shellInit()
 
-    def loadBuiltins( self ) :
+    def shellInit( self ) :
         self.console.push( "from math import *\n" )
         self.console.push( "from sympy import *\n" )
         self.console.push( "from sympy.abc import *\n" )
+        self.console.push( "from __future__ import division\n" )
 
     def write( self, sometext ) :
         self.listed.text += sometext
@@ -70,7 +71,7 @@ class PyShell( BoxLayout ) :
         return True
 
     def onBtnExecPress( self, instance ) :
-        command = self.kb.current.text
+        command = self.kb.current.text + "\n"
         if self.inputOk( command ) :
             if self.console.push( command ) :
                 print( "#More input required" )
