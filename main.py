@@ -18,6 +18,7 @@ class KiPyCalc( BoxLayout ) :
         self.add_widget( self.shell ) 
         self.plotterMode = False
         self.plottingOptionPanel = PlottingOptionPanel( self.onPlotConfirm )        
+        self._fooToPlot = None
 
     def start( self ) : 
         self.shell.start()
@@ -25,12 +26,12 @@ class KiPyCalc( BoxLayout ) :
     def onPlotRequest( self, instance ) : 
         self.plotterMode = True
         exp = self.shell.kb.current.text
-        self.plottingOptionPanel.open( exp )
+        self._fooToPlot = self.plottingOptionPanel.open( exp, self.shell )  
 
     def onPlotConfirm( self, instance ) :
         options = self.plottingOptionPanel.dismiss()
         if options != None and not self.plottingOptionPanel.wrongExpression :
-            self.plotter = Plotter( eval( self.shell.kb.current.text ), \
+            self.plotter = Plotter( eval( self._fooToPlot ), \
                                     options ) 
             self.clear_widgets()
             self.add_widget( self.plotter )

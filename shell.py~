@@ -13,8 +13,23 @@ import sys
 from keyboard import *
 
 DEBUG = True
+#DEBUG = False
 FONT_NAME = "res/font/tt/unispace rg.ttf"
 FONT_SIZE = 16
+
+class WrappedString() :
+    def __init__( self, s="", **kargs ) :
+        self.s = s
+
+    def write( self, someText ) :
+        self.s += someText
+
+    def contains( self, someText ) :
+        return someText in self.s
+
+    def __str__( self ) :
+        return self.s
+
 
 class PyShell( BoxLayout ) :
 

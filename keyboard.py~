@@ -51,6 +51,10 @@ class KiPyKeyboard( BoxLayout ) :
         self.loadNumpad()
         self.numpad.size_hint = 0.6, 1
 
+        self.symbols = GridLayout( cols=4 )
+        self.loadSymbols()
+        self.symbols.size_hint = 0.6, 1
+         
         self.foo1 = GridLayout( cols=2 )
         self.loadFoo1()
         self.foo1.size_hint = 0.4, 1
@@ -89,12 +93,16 @@ class KiPyKeyboard( BoxLayout ) :
         keySet = "1 2 3 4 5 6 7 8 9 0 . I E".split( " " ) + [ u"π", "10**", "E**" ] 
         loadButtonsFromString( self.numpad, keySet, self.onBtnPress )
 
+    def loadSymbols( self ) :
+        keySet = "x y z t T w a b c d . I E".split( " " ) + [ u"π", "10**", "E**" ] 
+        loadButtonsFromString( self.symbols, keySet, self.onBtnPress )
+
     def loadFoo1( self ) :
         keySet = "cos sin tan Ln Log diff".split( " " )
         loadButtonsFromString( self.foo1, keySet, self.onBtnPress )
 
     def loadFoo2( self ) :
-        keySet = "aCos aSin aTan aTan2 coTan".split( " " ) + [ u"∫" ]
+        keySet = "aCos aSin aTan aTan2 Lim".split( " " ) + [ u"∫" ]
         loadButtonsFromString( self.foo2, keySet, self.onBtnPress )
 
     def loadUnitOfMeasure( self ) :
@@ -105,21 +113,24 @@ class KiPyKeyboard( BoxLayout ) :
         self.shiftCount += 1
         if self.shiftCount == 3 : self.shiftCount = 0 
         self.kb.clear_widgets()
-        self.kb.add_widget( self.numpad )
-        if  self.shiftCount == 0 : 
+
+        if self.shiftCount == 0 : 
             self.kb.add_widget( self.foo1 )
+            self.kb.add_widget( self.numpad )
         elif self.shiftCount == 1 : 
             self.kb.add_widget( self.foo2 )
+            self.kb.add_widget( self.symbols )
         elif self.shiftCount == 2 : 
             self.kb.add_widget( self.unitOfMeasure )
+            self.kb.add_widget( self.numpad )
 
     def onBtnPress( self, instance ) :
         command = instance.text
         toInsert = ""
 
         if   command == u"√" :    toInsert = "sqrt("
-        elif command == u"∫" :    toInsert = ".integrate( x )"
-        elif command == "diff" :  toInsert = ".diff( x )"
+        elif command == u"∫" :    toInsert = "integrate( f, x )"
+        elif command == "diff" :  toInsert = "diff( f, x )"
         elif command == "cos" :   toInsert = "cos("
         elif command == "aCos" :  toInsert = "acos("
         elif command == "sin" :   toInsert = "sin("
@@ -128,9 +139,10 @@ class KiPyKeyboard( BoxLayout ) :
         elif command == "aTan" :  toInsert = "atan("
         elif command == "aTan2" : toInsert = "atan2("
         elif command == "coTan" : toInsert = "cot("
+        elif command == "Lim" : toInsert = "limit( f, x, xl )"
         elif command == "Log" :   toInsert = "log( x, 10 )"
         elif command == "Ln" :   toInsert = "ln( x, E )"
-        elif command == "evalf" : toInsert = ".evalf()"
+        elif command == "evalf" : toInsert = "evalf("
         elif command == u"π" :    toInsert = "pi"
         elif command == "clear" : self.current.text = u""
         elif command == "space" : toInsert = " "

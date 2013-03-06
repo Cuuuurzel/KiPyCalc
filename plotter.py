@@ -20,7 +20,9 @@ from math import sqrt
 from sympy import *
 from sympy.abc import *
 from sympy.utilities.lambdify import lambdify
+import sys
 from random import random
+from shell import WrappedString
 
 Builder.load_file( "kipycalc.kv" )
 
@@ -369,15 +371,25 @@ class PlottingOptionPanel( Popup ) :
                               content = cont, 
                               size_hint = ( 0.95,0.95 ) )
 
-    def open( self, someExpression ) : 
-        try : 
-            f = lambdify( x, eval(someExpression) )
-            self.expLabel.text = someExpression
-            self.wrongExpression = False
-        except : 
+    def open( self, someExpression, shellObj ) : 
+        #f = lambdify( x, eval(someExpression) )
+        #push stdout
+        originalStdout = sys.stdout
+        no = WrappedString()            
+        sys.stdout = no
+        #Result to the WrappedString
+        shellObj.console.push( "(" + someExpression + ").evalf()" )
+        #check for error
+        self.wrongExpression = no.contains( "Error" )
+        if not self.wrongExpression :
+            self.expLabel.text = str( no )
+        else : 
             self.expLabel.text = "The expression is not valid!!" 
-            self.wrongExpression = True           
+        #pop stdout
+        sys.stdout = originalStdout
+        #display the popup        
         Popup.open( self )
+        return str( no )
 
     def dismiss( self, forced=False ) :
         if not forced : 
