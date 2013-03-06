@@ -22,10 +22,35 @@ class HelpPanel( Popup ) :
     wrongExpression = BooleanProperty( False )
 
     def __init__( self ) :
-        cont = BoxLayout( orientation="vertical" )
-        cont.add_widget( Label( markup=True, text="Welcome to the help panel!" ) )
+        t = """[color=ff0000][size=24]Welcome to the help panel![/size][/color]
 
-        Popup.__init__( self, title = 'Plotting Options', \
+[size=16]First of all, I want to thank you for downloading my app, 
+every single user is important for me, 
+feel completely free to contact me for any question, 
+issues, or suggestion![/size]
+
+[size=20]Basic Usage[/size]
+To be more pragmatic, let's start immediately.
+The shift button allows you to change the meaning of the bottons.
+All the calculations are made in symbolic mode, 
+the evalf buttons give you a value : 
+    a = 2 * pi        
+    a              prints "2*pi"
+    evalf( a )     prints "6.28..."
+Declaring a function is also simple :
+    f = x**3 * sin(x)
+and then write 'f' to refer to the function, for example
+    integrate( f, x )
+or simply type 'f' and the press plot.
+
+For now, I need time to fix some things, 
+I will come with a good guide...
+So, this is all, good look!
+"""
+        cont = BoxLayout( orientation="vertical" )
+        cont.add_widget( Label( markup=True, text=t, halign="center" ) )
+
+        Popup.__init__( self, title = 'Welcome to the help panel!', \
                               content = cont, 
                               size_hint = ( 0.95,0.95 ) )
 
