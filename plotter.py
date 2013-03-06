@@ -372,7 +372,6 @@ class PlottingOptionPanel( Popup ) :
                               size_hint = ( 0.95,0.95 ) )
 
     def open( self, someExpression, shellObj ) : 
-        #f = lambdify( x, eval(someExpression) )
         #push stdout
         originalStdout = sys.stdout
         no = WrappedString()            

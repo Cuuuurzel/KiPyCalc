@@ -18,9 +18,10 @@ def loadButtonsFromString( someWidget, names, onPress ) :
         btn.font_size = FONT_SIZE
         someWidget.add_widget( btn )
 
+
 class KiPyKeyboard( BoxLayout ) :
     
-    def __init__( self, handlerfoo, plotfoo ) :
+    def __init__( self, handlerfoo, plotfoo, helpfoo ) :
         BoxLayout.__init__( self, orientation="vertical" )
         inp = BoxLayout( orientation="horizontal" )
         inp.padding = 1
@@ -94,7 +95,7 @@ class KiPyKeyboard( BoxLayout ) :
         loadButtonsFromString( self.numpad, keySet, self.onBtnPress )
 
     def loadSymbols( self ) :
-        keySet = "x y z t T w a b c d . I E".split( " " ) + [ u"π", "10**", "E**" ] 
+        keySet = "x y z t T w a b c d f g k . I E".split( " " ) 
         loadButtonsFromString( self.symbols, keySet, self.onBtnPress )
 
     def loadFoo1( self ) :

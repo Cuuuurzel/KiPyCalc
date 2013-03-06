@@ -18,6 +18,7 @@ def loadButtonsFromString( someWidget, names, onPress ) :
         btn.font_size = FONT_SIZE
         someWidget.add_widget( btn )
 
+
 class KiPyKeyboard( BoxLayout ) :
     
     def __init__( self, handlerfoo, plotfoo ) :

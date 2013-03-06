@@ -8,6 +8,7 @@ from kivy.uix.boxlayout import BoxLayout
 from shell import *
 from plotter import *
 from kivyextras import *
+from tutorial import *
 
 
 class KiPyCalc( BoxLayout ) :
@@ -17,15 +18,16 @@ class KiPyCalc( BoxLayout ) :
         self.shell = PyShell( self.onPlotRequest )
         self.plotter = None
         self.add_widget( self.shell ) 
-        self.plotterMode = False
-        self.plottingOptionPanel = PlottingOptionPanel( self.onPlotConfirm )        
+        self.mode = "calc"
+        self.plottingOptionPanel = PlottingOptionPanel( self.onPlotConfirm )      
+        self.helpPanel = HelpPanel()        
         self._fooToPlot = None
 
     def start( self ) : 
         self.shell.start()
 
     def onPlotRequest( self, instance ) : 
-        self.plotterMode = True
+        self.mode = "plot"
         exp = self.shell.kb.current.text
         self._fooToPlot = self.plottingOptionPanel.open( exp, self.shell )  
 
@@ -37,19 +39,25 @@ class KiPyCalc( BoxLayout ) :
             self.clear_widgets()
             self.add_widget( self.plotter )
 
+    def onHelpRequest( self ) : 
+        self.mode = "help"
+        self.helpPanel.open()
+
     def onReturnKey( self ) :
-        if self.plotterMode :
-            self.plotterMode = False
+        if self.mode == "plot" :
+            self.mode = "calc"
             self.clear_widgets()
             self.add_widget( self.shell )
             self.plottingOptionPanel.dismiss( True )
             return True
-        else : return False
+        else : 
+            return False
 
     def onMenuKey( self ) :
-        if self.plotterMode :
+        if self.mode == "plot" :
             self.onPlotRequest( None )
-        else : return False
+        elif self.mode == "calc" : 
+            self.onHelpRequest()
 
 
 class KiPyCalcApp( App ) : 
