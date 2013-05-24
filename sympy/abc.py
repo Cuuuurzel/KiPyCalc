@@ -10,7 +10,6 @@ for _s in _latin + _greek + _units :
 
 del _latin, _greek, _s, _units
 
-
 #some functions, easier to use for most user
 
 def integrate( f, x ) :
@@ -18,7 +17,3 @@ def integrate( f, x ) :
 
 def diff( f, x ) :
     return ( f ).diff( x )
-
-def evalf( f ) : 
-    return f.evalf() 
-

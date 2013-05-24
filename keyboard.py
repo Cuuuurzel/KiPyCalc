@@ -7,7 +7,7 @@ from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
 
-FONT_NAME = "res/font/tt/unispace rg.ttf"
+FONT_NAME = "res/ubuntu-font-family-0.80/Ubuntu-L.ttf"
 FONT_SIZE = 20
 
 def loadButtonsFromString( someWidget, names, onPress ) :
@@ -17,7 +17,6 @@ def loadButtonsFromString( someWidget, names, onPress ) :
         btn.font_name = FONT_NAME
         btn.font_size = FONT_SIZE
         someWidget.add_widget( btn )
-
 
 class KiPyKeyboard( BoxLayout ) :
     
@@ -64,10 +63,6 @@ class KiPyKeyboard( BoxLayout ) :
         self.loadFoo2()
         self.foo2.size_hint = 0.4, 1
 
-        self.unitOfMeasure = GridLayout( cols=2 )
-        self.loadUnitOfMeasure()
-        self.unitOfMeasure.size_hint = 0.4, 1
-
         self.kb = BoxLayout( orientation="horizontal" )
         self.kb.size_hit = 1, 0.33
         self.static_keys.size_hit = 1, 0.33
@@ -106,13 +101,9 @@ class KiPyKeyboard( BoxLayout ) :
         keySet = "aCos aSin aTan aTan2 Lim".split( " " ) + [ u"∫" ]
         loadButtonsFromString( self.foo2, keySet, self.onBtnPress )
 
-    def loadUnitOfMeasure( self ) :
-        keySet = "p n u m K M G P".split( " " )
-        loadButtonsFromString( self.unitOfMeasure, keySet, self.onBtnPress )
-
     def onShift( self ) :
         self.shiftCount += 1
-        if self.shiftCount == 3 : self.shiftCount = 0 
+        if self.shiftCount == 2 : self.shiftCount = 0 
         self.kb.clear_widgets()
 
         if self.shiftCount == 0 : 
@@ -121,29 +112,26 @@ class KiPyKeyboard( BoxLayout ) :
         elif self.shiftCount == 1 : 
             self.kb.add_widget( self.foo2 )
             self.kb.add_widget( self.symbols )
-        elif self.shiftCount == 2 : 
-            self.kb.add_widget( self.unitOfMeasure )
-            self.kb.add_widget( self.numpad )
 
     def onBtnPress( self, instance ) :
         command = instance.text
         toInsert = ""
 
-        if   command == u"√" :    toInsert = "sqrt("
-        elif command == u"∫" :    toInsert = "integrate( f, x )"
-        elif command == "diff" :  toInsert = "diff( f, x )"
-        elif command == "cos" :   toInsert = "cos("
-        elif command == "aCos" :  toInsert = "acos("
-        elif command == "sin" :   toInsert = "sin("
-        elif command == "aSin" :  toInsert = "asin("
-        elif command == "tan" :   toInsert = "tan("
-        elif command == "aTan" :  toInsert = "atan("
-        elif command == "aTan2" : toInsert = "atan2("
-        elif command == "coTan" : toInsert = "cot("
-        elif command == "Lim" : toInsert = "limit( f, x, xl )"
-        elif command == "Log" :   toInsert = "log( x, 10 )"
-        elif command == "Ln" :   toInsert = "ln( x, E )"
-        elif command == "evalf" : toInsert = "evalf("
+        if   command == u"√" :    toInsert = "sqrt( ans )"
+        elif command == u"∫" :    toInsert = "integrate( ans, x )"
+        elif command == "diff" :  toInsert = "diff( ans, x )"
+        elif command == "cos" :   toInsert = "cos( ans )"
+        elif command == "aCos" :  toInsert = "acos( ans )"
+        elif command == "sin" :   toInsert = "sin( ans )"
+        elif command == "aSin" :  toInsert = "asin( ans )"
+        elif command == "tan" :   toInsert = "tan( ans )"
+        elif command == "aTan" :  toInsert = "atan( ans )"
+        elif command == "aTan2" : toInsert = "atan2( ans )"
+        elif command == "coTan" : toInsert = "cot( ans )"
+        elif command == "Lim" : toInsert = "limit( ans, x, n )"
+        elif command == "Log" :   toInsert = "log( ans, 10 )"
+        elif command == "Ln" :   toInsert = "ln( ans, E )"
+        elif command == "evalf" : toInsert = "evalf()"
         elif command == u"π" :    toInsert = "pi"
         elif command == "clear" : self.current.text = u""
         elif command == "space" : toInsert = " "
@@ -152,11 +140,10 @@ class KiPyKeyboard( BoxLayout ) :
         elif command == "\\n" :   toInsert = "\n"
         elif command == "tab" :   toInsert = "    "
         elif command == "\\t" :   toInsert = "    "
-        elif command == "print" : toInsert = "pprint( "
+        elif command == "print" : toInsert = "pprint( ans )"
         elif command == "<-" :    self.current.do_cursor_movement( 'cursor_left' )
         elif command == "->" :    self.current.do_cursor_movement( 'cursor_right' )
         elif command == "undo" :  self.current.do_undo()
-        elif command == "subs" :  toInsert = ".subs( { p:10**(-12), n:10**(-9), u:10**(-6), m:10**(-3), K:10**3, M:10**6, G:10**9, P:10**12 } )"
         #all the rest...
         else : 
             toInsert = command

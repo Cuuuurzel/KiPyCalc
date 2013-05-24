@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from code import InteractiveConsole
 from kivy.app import App
 from kivy.base import EventLoop
 from kivy.config import Config
@@ -8,8 +7,6 @@ from kivy.uix.boxlayout import BoxLayout
 from shell import *
 from plotter import *
 from kivyextras import *
-from tutorial import *
-
 
 class KiPyCalc( BoxLayout ) :
 
@@ -20,7 +17,6 @@ class KiPyCalc( BoxLayout ) :
         self.add_widget( self.shell ) 
         self.mode = "calc"
         self.plottingOptionPanel = PlottingOptionPanel( self.onPlotConfirm )      
-        self.helpPanel = HelpPanel()        
         self._fooToPlot = None
 
     def start( self ) : 
@@ -39,10 +35,6 @@ class KiPyCalc( BoxLayout ) :
             self.clear_widgets()
             self.add_widget( self.plotter )
 
-    def onHelpRequest( self ) : 
-        self.mode = "help"
-        self.helpPanel.open()
-
     def onReturnKey( self ) :
         if self.mode == "plot" :
             self.mode = "calc"
@@ -50,15 +42,10 @@ class KiPyCalc( BoxLayout ) :
             self.add_widget( self.shell )
             self.plottingOptionPanel.dismiss( True )
             return True
-        else : 
-            return False
 
     def onMenuKey( self ) :
         if self.mode == "plot" :
             self.onPlotRequest( None )
-            return True
-        elif self.mode == "calc" : 
-            self.onHelpRequest()
             return True
 
 
@@ -77,8 +64,7 @@ class KiPyCalcApp( App ) :
         if key == 27 : #return (esc) key
             return self.kpc.onReturnKey() 
         if key == 319 : #menu key
-            return self.kpc.onMenuKey() 
-        
+            return self.kpc.onMenuKey()         
 
     def on_pause( self ) : 
          return True
