@@ -7,7 +7,7 @@ from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
 
-FONT_NAME = "res/ubuntu-font-family-0.80/Ubuntu-L.ttf"
+FONT_NAME = "res/ubuntu-font-family-0.80/UbuntuMono-R.ttf"
 FONT_SIZE = 20
 
 def loadButtonsFromString( someWidget, names, onPress ) :

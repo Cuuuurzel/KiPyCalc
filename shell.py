@@ -13,7 +13,7 @@ import sys
 from keyboard import *
 
 DEBUG = False
-FONT_NAME = "res/ubuntu-font-family-0.80/Ubuntu-L.ttf"
+FONT_NAME = "res/ubuntu-font-family-0.80/UbuntuMono-R.ttf"
 FONT_SIZE = 16
 
 class WrappedString() :
@@ -60,6 +60,7 @@ from sympy import *
 from sympy.abc import *
 from __future__ import division
 ans = 0
+last_ANS = 0
 print( "#Type 'ans' to refer to the last result." )
 print( "#Keep in mind that numeric values differs a lot from symbolic one." )
 def evalf() : 
@@ -75,19 +76,39 @@ def evalf() :
 	def write( self, sometext ) :
 		self.listed.text += sometext
 
-	"""
-	Add input check here!
-	"""
-	def inputCheck( self, stat ) :
-		print( "in: " + stat )
-		return stat
+	def correctInput( self, stat ) :
+		if stat == "\n" : stat = "ans\n"
+		print( "in : " + stat[:-1] )
+
+		if stat.upper() in ( "ANS\n", "ANS" ) :
+			return "print( ans )", False
+		
+		keys = [ "DEF", "FOR", "WHILE", "IMPORT", "EXEC" ]
+		for key in keys : 
+			if key in stat.upper() : 
+				return stat, False
+		return "ans = " + stat, True
+			
 
 	def onBtnExecPress( self, instance ) :
-		stat = self.inputCheck( self.kb.current.text ) #missing \n?
-		if self.console.push( "ans = " + stat ) :
-			print( "#Multiline instructions must be entered in one fell swoop" )
-		self.console.push( "ans" )
-		self.kb.flush() 
+		stat = self.kb.current.text + "\n"
+		stat, printANS = self.correctInput( stat )
+
+		#Save current ANS.
+		if printANS : self.console.push( "last_ANS = ans\n" )
+		#Execute statement.
+		moreInputNeeded = self.console.push( stat )
+		#Check for multiline instructions.
+		if moreInputNeeded :
+			print( "#Multiline instructions must be entered in one fell swoop!" )
+			self.console.push( "\n" )
+		#The input was ok.
+		else :
+			#If ANS is None, restore last_ANS.
+			self.console.push( "if ans is None : ans = last_ANS\n" ) 
+			#Print ANS, flush input buffer.			
+			if printANS : self.console.push( "print( ans )\n" )
+			self.kb.flush() 
 
 
 
