@@ -52,7 +52,7 @@ class Plotter( Widget ) :
 	xpp = NumericProperty( 0 )
 	ypp = NumericProperty( 0 )
 	pinchWeight = NumericProperty( 5 )
-	text = StringProperty( "" )
+	c_fixed = BooleanProperty( False )
 	_touches = ListProperty( [] )
 	_stepAuto = BooleanProperty( True )
 	_labels = ListProperty( [] )
@@ -224,7 +224,7 @@ class Plotter( Widget ) :
 
 	def on_touch_move( self, touch ) :
 		#check if the touch is sigle or multiple
-		if len( self._touches ) == 1 :
+		if len( self._touches ) == 1 and not self.c_fixed :
 			self.movePlot()
 		elif len( self._touches ) == 2 :
 			self.pinchZoom() 

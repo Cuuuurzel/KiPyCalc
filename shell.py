@@ -12,7 +12,7 @@ import sys
 
 from keyboard import *
 
-DEBUG = False
+DEBUG = True
 FONT_NAME = "res/ubuntu-font-family-0.80/UbuntuMono-R.ttf"
 FONT_SIZE = 18
 
@@ -54,7 +54,7 @@ class PyShell( BoxLayout ) :
 		self.shellInit()
 
 	def shellInit( self ) :
-		initCode = open( "res/SHELL_INIT.py" ).read()
+		initCode = open( "res/SHELL_INIT" ).read()
 		for line in initCode.split("\n") :
 			self.console.push( line )
 
