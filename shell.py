@@ -14,7 +14,7 @@ from keyboard import *
 
 DEBUG = False
 FONT_NAME = "res/ubuntu-font-family-0.80/UbuntuMono-R.ttf"
-FONT_SIZE = 16
+FONT_SIZE = 18
 
 class WrappedString() :
 	def __init__( self, s="", **kargs ) :
@@ -54,22 +54,7 @@ class PyShell( BoxLayout ) :
 		self.shellInit()
 
 	def shellInit( self ) :
-		initCode = """
-from math import *
-from sympy import *
-from sympy.abc import *
-from __future__ import division
-ans = 0
-last_ANS = 0
-print( "#Type 'ans' to refer to the last result." )
-print( "#Keep in mind that numeric values differs a lot from symbolic one." )
-def evalf() : 
-	try :
-		return ans.evalf()
-	except AttributeError : 
-		return ans
-"""
-
+		initCode = open( "res/SHELL_INIT.py" ).read()
 		for line in initCode.split("\n") :
 			self.console.push( line )
 

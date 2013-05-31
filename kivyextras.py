@@ -1,3 +1,4 @@
+from kivy.config import Config
 from kivy.lang import Builder
 from kivy.properties import ListProperty, NumericProperty, ObjectProperty, StringProperty
 from kivy.uix.boxlayout import BoxLayout
@@ -7,18 +8,14 @@ from kivy.uix.widget import Widget
 
 Builder.load_file( "kivyextras.kv" )
 
+def screen_size() : return float( Config.get( 'graphics', 'width' ) ), float( Config.get( 'graphics', 'height' ) )
+
 class ColorChooser( BoxLayout ) :
  
     sldr = ObjectProperty( None )
     sldg = ObjectProperty( None )
     sldb = ObjectProperty( None )
     label = StringProperty( "Pick up a color :" )
-
-    """
-    Arguments : 
-        'label' : A simple text to display insted of the default one. Needed.
-        'rgb'   : The default rgb value to display. Needed.
-    """
 
     def __init__( self, **kargs ) : 
         super( ColorChooser, self ).__init__( **kargs )
@@ -47,14 +44,6 @@ class NumericUpDown( BoxLayout ) :
     txtvalue = ObjectProperty( None )
     btnUp = ObjectProperty( None )
     btnDown = ObjectProperty( None )
-
-    """
-    Arguments : 
-        'vmin'  : The min value tha the user can insert. Default is None.
-        'vmax'  : The max value tha the user can insert. Default is None.
-        'vstep' : The step the click on the up or down button will use. Needed.
-        'value' : The default value. Default : vmin + (vmax-vmin )/2
-    """
 
     def __init__( self, **kargs ) :
         super( NumericUpDown, self ).__init__( **kargs )

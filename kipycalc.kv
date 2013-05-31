@@ -3,7 +3,7 @@
 <Plotter>:
     canvas:
         Color: 
-            rgb: self.bgColor
+            rgb: 0, 0, 0, 1
         Rectangle:
             pos: 0,0
             size: self.size
@@ -11,16 +11,16 @@
         Color: 
             rgb: self.plotColor
         Line:
-            width: self.plotWidth
+            width: 1
             points: self.points
 
         Color: 
             rgb: self.axisColor
         Line:
-            width: self.axisWidth
+            width: 1
             points: [ (-self.xRange[0])*self.xpp, 0, (-self.xRange[0])*self.xpp, self.height ]
         Line:
-            width: self.axisWidth
+            width: 1
             points: [ 0, (-self.yRange[0])*self.ypp, self.width, (-self.yRange[0])*self.ypp ]
 
     Label:
