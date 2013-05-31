@@ -54,7 +54,6 @@ class Plotter( Widget ) :
 	pinchWeight = NumericProperty( 5 )
 	c_fixed = BooleanProperty( False )
 	_touches = ListProperty( [] )
-	_stepAuto = BooleanProperty( True )
 	_labels = ListProperty( [] )
 	_foo_zeros = ObjectProperty( None )
 	_foo_x_to_zero = ObjectProperty( None )
@@ -64,7 +63,6 @@ class Plotter( Widget ) :
 	def __init__( self, foo, **kargs ) : 
 		Widget.__init__( self, **kargs )
 		self.width, self.height = screen_size()
-		self.expr = foo
 
 		try : 
 			self._foo_zeros = solve( foo, x )
@@ -78,17 +76,16 @@ class Plotter( Widget ) :
 		except : pass		
 
 		self.foo = lambdify( x, foo )		
-		self.setup( **kargs )
-		self.evalPoints()  
+		self.setup()
 		self.evalPoints()  
 
-	def setup( self, **kargs ) : 
-		self.xRange = -1, 1
-		self.yRange = -1, 1
-		self.setupXYpp( 2, 2 )
-		try :
-			self._stepAuto = kargs[ "step" ] == 0
-		except KeyError : pass
+	def setup( self ) : 
+		xToDisplay = float( self.xRange[1]-self.xRange[0] )
+		yToDisplay = float( self.yRange[1]-self.yRange[0] )
+		self.xpp = self.width / xToDisplay
+		self.ypp = self.height / yToDisplay
+		if self.step == 0 :
+			self.step = xToDisplay / self.width*3
 
 	def evalSpecialPoints( self ) :
 		#cleaning
@@ -163,14 +160,6 @@ class Plotter( Widget ) :
 						self.add_widget( lbl )
 					except : pass
 
-	def setupXYpp( self, xtd=None, ytd=None ) :
-		xToDisplay = xtd or self.xRange[1]-self.xRange[0]
-		yToDisplay = ytd or self.yRange[1]-self.yRange[0]
-		self.xpp = float( self.width ) / xToDisplay
-		self.ypp = float( self.height ) / yToDisplay
-		if self._stepAuto :
-			self.step = xToDisplay / float( self.width )
-
 	def evalPoints( self ) :
 		points = []
 		x = self.xRange[0]
@@ -208,7 +197,7 @@ class Plotter( Widget ) :
 			self.xRange = newXRange
 		elif ( abs(dy) > abs(dx) ) and newYRange[1]-newYRange[0] >= 2 :
 			self.yRange = newYRange
-		self.setupXYpp()
+		self.setup()
 		self.evalPoints()
 	
 	def on_touch_down( self, touch ) :
@@ -224,7 +213,7 @@ class Plotter( Widget ) :
 
 	def on_touch_move( self, touch ) :
 		#check if the touch is sigle or multiple
-		if len( self._touches ) == 1 and not self.c_fixed :
+		if not self.c_fixed and len( self._touches ) == 1 :
 			self.movePlot()
 		elif len( self._touches ) == 2 :
 			self.pinchZoom() 
