@@ -23,7 +23,10 @@ class KiPyCalc( BoxLayout ) :
 
 	def onPlotRequest( self, instance ) : 
 		self.mode = "plot"
-		self.plottingOptionPanel.open( self.shell.kb.current.text, self.shell )  
+		try :
+			self.plottingOptionPanel.open( self.shell.kb.current.text, self.shell, self.plotter.getConfig() )  
+		except AttributeError : 
+			self.plottingOptionPanel.open( self.shell.kb.current.text, self.shell )  
 
 	def onPlotConfirm( self, instance ) :
 		options = self.plottingOptionPanel.dismiss()

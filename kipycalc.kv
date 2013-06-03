@@ -1,6 +1,8 @@
-#:kivy 1.0
+#:kivy 1.7
 
 <Plotter>:
+	lblPoints: lblPoints
+
     canvas:
         Color: 
             rgb: 0, 0, 0, 1
@@ -18,7 +20,40 @@
             rgb: self.axisColor
         Line:
             width: 1
-            points: [ (-self.xRange[0])*self.xpp, 0, (-self.xRange[0])*self.xpp, self.height ]
+            points: [ -self.xRange[0]*self.ppx, 0, -self.xRange[0]*self.ppx, self.height ]
         Line:
             width: 1
-            points: [ 0, (-self.yRange[0])*self.ypp, self.width, (-self.yRange[0])*self.ypp ]
+            points: [ 0, -self.yRange[0]*self.ppy, self.width, -self.yRange[0]*self.ppy ]
+	Label:
+		id: lblPoints
+		text: self.parent.label
+		pos: self.parent.width-5*self.width/3, self.parent.height-self.height
+
+
+<SpecialPoint>:
+	lblName: lblName
+
+	canvas:
+		Color:
+			rgb: 1, 0, 0, 1
+		Point:
+			pointsize: 2
+			points: self.pos
+		Color:
+			rgb: 0.6, 0.6, 0.6, 1
+		Line:
+			dash_length: 5
+			dash_offset: 10
+			width: 1
+			points: ( 0, self.pos[1], self.width, self.pos[1] )
+		Line:
+			dash_length: 5
+			dash_offset: 10
+			width: 1
+			points: ( self.pos[0], 0, self.pos[0], self.height )
+	Label:
+		id: lblName
+		text: self.parent.label
+		size: 50, 50
+		pos: self.parent.pos
+

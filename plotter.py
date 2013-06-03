@@ -13,152 +13,71 @@ from kivy.uix.popup import Popup
 from kivy.uix.slider import Slider
 from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
-from kivyextras import ColorChooser, NumericUpDown, screen_size
+from kivyextras import *
 from time import time
 from math import sqrt
 from sympy import *
 from sympy.abc import *
 from sympy.utilities.lambdify import lambdify
 import sys
-from random import random
 from shell import WrappedString
 
 Builder.load_file( "kipycalc.kv" )
 
-def calculate_Points(x1, y1, x2, y2, steps=5):
-	dx = x2 - x1
-	dy = y2 - y1
-	dist = sqrt(dx * dx + dy * dy)
-	if dist < steps:
-		return None
-	o = []
-	m = dist / steps
-	for i in xrange(1, int(m)):
-		mi = i / m
-		lastx = x1 + dx * mi
-		lasty = y1 + dy * mi
-		o.extend([lastx, lasty])
-	return o
+ALPHABET = "ABCDEFGHJKILMNOPQRSTUVWXYZ"
+FONT_NAME = "res/ubuntu-font-family-0.80/UbuntuMono-R.ttf"
+FONT_SIZE = 18
+		
+#TODO : FIX PLOTTER FUNCTION CHECKER
 
+class SpecialPoint( Widget ) :
+	
+	point = ListProperty( [ 0, 0 ] )
+	label = StringProperty( "" )
+	lblName = ObjectProperty( None )
+
+	def __init__( self, **kargs ) :
+		Widget.__init__( self, **kargs )
+		self.scale( 0, 0, 1, 1 )
+		if not "label" in kargs : self.label = str( self.point )
+		self.lblName.font_name = FONT_NAME
+		self.lblName.font_size = FONT_SIZE
+		
+	def scale( self, minx, miny, ppx, ppy ) :
+		self.pos = [ int((self.point[0]-minx)*ppx), int((self.point[1]-miny)*ppy) ]
 
 class Plotter( Widget ) :
 
-	plotColor = ListProperty( [0,1,0] )
-	axisColor = ListProperty( [1,1,1] )
+	#Points to be drawn
 	points = ListProperty( [] )
+	#Special points
+	spoints = ListProperty( [] )
+	label = StringProperty( "" )
+	lblPoints = ObjectProperty( None )
+	#Draw range
 	xRange = ListProperty( [-1,1] )
 	yRange = ListProperty( [-1,1] )
-	step = NumericProperty( 0 )
-	xpp = NumericProperty( 0 )
-	ypp = NumericProperty( 0 )
-	pinchWeight = NumericProperty( 5 )
-	c_fixed = BooleanProperty( False )
-	_touches = ListProperty( [] )
-	_labels = ListProperty( [] )
-	_foo_zeros = ObjectProperty( None )
-	_foo_x_to_zero = ObjectProperty( None )
-	_derivative_zeros = ObjectProperty( None )
+	#Plotter resolution
+	ppx = NumericProperty( 0 )
+	ppy = NumericProperty( 0 )
+	#Other options
+	pinchS = NumericProperty( 0.1 )
+	plotColor = ListProperty( [0,1,0] )
+	axisColor = ListProperty( [1,1,1] )
+	#List to handle touches
+	touches = ListProperty( [] )
 	touching = BooleanProperty( False )
 
 	def __init__( self, foo, **kargs ) : 
 		Widget.__init__( self, **kargs )
 		self.width, self.height = screen_size()
-
-		try : 
-			self._foo_zeros = solve( foo, x )
-		except : pass		
-		try : 
-			self._foo_x_to_zero = foo.subs( x, 0 ).evalf()  
-			if not self._foo_x_to_zero.is_real : self._foo_x_to_zero = None
-		except : pass
-		try : 
-			self._derivative_zeros = solve( foo.diff( x ), x )
-		except : pass		
-
+		self.expr = foo
 		self.foo = lambdify( x, foo )		
+		self.lblPoints.font_name = FONT_NAME
+		self.lblPoints.font_size = FONT_SIZE
 		self.setup()
+		self.fooStudy()
 		self.evalPoints()  
-
-	def setup( self ) : 
-		xToDisplay = float( self.xRange[1]-self.xRange[0] )
-		yToDisplay = float( self.yRange[1]-self.yRange[0] )
-		self.xpp = self.width / xToDisplay
-		self.ypp = self.height / yToDisplay
-		if self.step == 0 :
-			self.step = xToDisplay / self.width*3
-
-	def evalSpecialPoints( self ) :
-		#cleaning
-		self.canvas.remove_group( "intersections" )
-		self.canvas.remove_group( "minandmax" )
-		for lbl in self._labels : self.remove_widget( lbl ) 
-		self.evalIntersections()
-		self.evalMinAndMax()
-
-	def evalIntersections( self ) :
-		#settings
-		dl = 1
-		do = 5
-		with self.canvas :					 
-			kg.Color( self.axisColor, group="intersections" )
-		#x axis
-		if not self._foo_zeros is None :
-			for xi in self._foo_zeros :
-				if xi.is_real and self.xRange[0]<xi<self.xRange[1] :
-					xi = xi.evalf()
-					p = ( int( (xi-self.xRange[0]) * self.xpp ), 0,\
-						  int( (xi-self.xRange[0]) * self.xpp ), self.height )				  
-					t = "[color=ff0000]%.2f[/color]" % ( xi )
-					with self.canvas :   
-						kg.Line( dash_lenght=dl, dash_offset=do, points=p, group="intersections" )
-						kg.Point( pointsize=2, group="intersections",
-								  points=[ (xi-self.xRange[0])*self.xpp, -self.yRange[0]*self.ypp ] )
-					lbl = Label( center=(p[0],9*self.height/10.0), text=t, markup=True )
-					self._labels.append( lbl )
-					self.add_widget( lbl )
-		#y axis
-		if not self._foo_x_to_zero is None and self._foo_x_to_zero.is_real :
-			yi = self._foo_x_to_zero #self._sympyfoo.subs( x, 0 ).evalf()  
-			p = ( 0, int( (yi-self.yRange[0]) * self.ypp ),\
-				  self.width, int( (yi-self.yRange[0]) * self.ypp ) )			  
-			t = "[color=ff0000]%.2f[/color]" % ( yi )
-			with self.canvas :   
-				kg.Line( dash_lenght=dl, dash_offset=do, points=p, group="intersections" )
-				kg.Point( pointsize=2, group="intersections",
-						  points=[ -self.xRange[0]*self.xpp, (yi-self.yRange[0])*self.ypp ] )
-			lbl = Label( center=(4*self.width/5.0, p[1]), text=t, markup=True )
-			self._labels.append( lbl )
-			self.add_widget( lbl )
-	 
-	def evalMinAndMax( self ) : 
-		#settings
-		dl = 1
-		do = 5
-		with self.canvas :					 
-			kg.Color( self.axisColor, group="minandmax" )
-		#stationary points
-		if not self._derivative_zeros is None :
-			for xi in self._derivative_zeros : 
-				if xi.is_real and self.xRange[0]<xi<self.xRange[1] :
-					xi = xi.evalf()
-					try : 
-						yi = self.foo( xi )
-						px = ( int( (xi-self.xRange[0]) * self.xpp ), 0,\
-							   int( (xi-self.xRange[0]) * self.xpp ), self.height )				  
-						tx = "[color=ff0000]%.2f[/color]" % ( xi )
-						py = ( 0, int( (yi-self.yRange[0]) * self.ypp ),\
-							   self.width, int( (yi-self.yRange[0]) * self.ypp ) )			  
-						ty = "[color=ff0000]%.2f[/color]" % ( yi )
-						with self.canvas :   
-							kg.Line( dash_lenght=dl, dash_offset=do, points=px, group="minandmax" )
-							kg.Line( dash_lenght=dl, dash_offset=do, points=py, group="minandmax" )
-							kg.Point( pointsize=2, points=[ (xi-self.xRange[0])*self.xpp, (yi-self.yRange[0])*self.ypp ], group="minandmax" )
-						lbl = Label( center=(px[0],9*self.height/10.0), text=tx, markup=True )
-						self._labels.append( lbl )
-						lbl = Label( center=(4*self.width/5.0, py[1]), text=ty, markup=True )
-						self._labels.append( lbl )
-						self.add_widget( lbl )
-					except : pass
 
 	def evalPoints( self ) :
 		points = []
@@ -166,57 +85,89 @@ class Plotter( Widget ) :
 		while x < self.xRange[1] : 
 			try :
 				y = self.foo( x )
-				px = ( x - self.xRange[0] ) * self.xpp
-				py = ( y - self.yRange[0] ) * self.ypp
-				points.append( px )
-				points.append( py )
-			except : pass
+				points.append( ( x - self.xRange[0] ) * self.ppx )
+				points.append( ( y - self.yRange[0] ) * self.ppy )
+			except ValueError: pass
+			except GraphicsException : pass
 			x += self.step
 		self.points = points
-		if not self.touching : 
-			self.evalSpecialPoints()
+		for point in self.spoints : 			
+			point.scale( self.xRange[0], self.yRange[0], self.ppx, self.ppy )
+
+	def setup( self ) : 
+		xToDisplay = float( self.xRange[1]-self.xRange[0] )
+		yToDisplay = float( self.yRange[1]-self.yRange[0] )
+		self.ppx = self.width / xToDisplay
+		self.ppy = self.height / yToDisplay
+		self.step = xToDisplay / (self.width*3)
 
 	def movePlot( self ) :
-		dx = ( self._touches[0].px - self._touches[0].x )/( self.xpp )
-		dy = ( self._touches[0].py - self._touches[0].y )/( self.ypp )
+		dx = ( self.touches[0].px - self.touches[0].x )/( self.ppx )
+		dy = ( self.touches[0].py - self.touches[0].y )/( self.ppy )
 		self.xRange = self.xRange[0]+dx, self.xRange[1]+dx
 		self.yRange = self.yRange[0]+dy, self.yRange[1]+dy
 		self.evalPoints()
 	 
 	def pinchZoom( self ) :
-		d0x = abs( self._touches[0].ox - self._touches[1].ox ) / self.xpp
-		d0y = abs( self._touches[0].oy - self._touches[1].oy ) / self.ypp
-		d1x = abs( self._touches[0].x - self._touches[1].x ) / self.xpp
-		d1y = abs( self._touches[0].y - self._touches[1].y ) / self.ypp
-		dx = ( d0x - d1x ) / self.pinchWeight
-		dy = ( d0y - d1y ) / self.pinchWeight
-		newXRange = self.xRange[0]-dx, self.xRange[1]+dx
-		newYRange = self.yRange[0]-dy, self.yRange[1]+dy
-
-		if ( abs(dx) > abs(dy) ) and newXRange[1]-newXRange[0] >= 2 :
-			self.xRange = newXRange
-		elif ( abs(dy) > abs(dx) ) and newYRange[1]-newYRange[0] >= 2 :
-			self.yRange = newYRange
+		dpx = abs( self.touches[0].psx - self.touches[1].psx )
+		dx  = abs( self.touches[0].sx  - self.touches[1].sx  )
+		dpy = abs( self.touches[0].psy - self.touches[1].psy )
+		dy  = abs( self.touches[0].sy  - self.touches[1].sy  )
+		if dx > self.pinchS : self.xRange = [ xl*dpx/dx for xl in self.xRange ]
+		if dy > self.pinchS : self.yRange = [ yl*dpy/dy for yl in self.yRange ]
 		self.setup()
 		self.evalPoints()
 	
 	def on_touch_down( self, touch ) :
-		self._touches.append( touch )
+		self.touches.append( touch )
 		return True
 
 	def on_touch_up( self, touch ) :
-		for t in self._touches :
+		for t in self.touches :
 			if t.uid == touch.uid:
-				self._touches.remove( t )
+				self.touches.remove( t )
 		self.touching = False
 		self.evalPoints()
 
 	def on_touch_move( self, touch ) :
 		#check if the touch is sigle or multiple
-		if not self.c_fixed and len( self._touches ) == 1 :
+		if len( self.touches ) == 1 :
 			self.movePlot()
-		elif len( self._touches ) == 2 :
+		elif len( self.touches ) == 2 :
 			self.pinchZoom() 
+
+	def getConfig( self ) :
+		return { "plotColor" : self.plotColor, \
+                 "axisColor" : self.axisColor, \
+                 "xRange" : self.xRange, \
+                 "yRange" : self.yRange }
+
+	def fooStudy( self ) :
+		spoints = []
+		#Function intersections with the x axis.
+		try :
+			for x_val in solve( self.expr, x ) :
+				spoints.append( [ x_val, 0 ] )
+		except NotImplementedError : pass	
+		#Function intersections with the y axis.
+		try :
+			y_val = self.expr.subs( x, 0 ).evalf()  
+			if y_val.is_real : spoints.append( [ 0, y_val ] )
+		except NotImplementedError : pass
+		#Function stationary points.
+		try :
+			for x_val in solve( self.expr.diff( x ), x ) :
+				spoints.append( [ x_val, self.foo(x_val) ] )
+		except NotImplementedError : pass
+		#Delete duplicates
+		for p in spoints :
+			if spoints.count( p ) != 1 : spoints.remove( p )
+		#Adding new widgets
+		for i, p in enumerate( spoints ) :
+			sp = SpecialPoint( point=p, size=self.size, label=ALPHABET[i])
+			self.add_widget( sp )		
+			self.spoints.append( sp )
+			self.label += "\n%s : [ %.3f, %.3f ]" % ( ALPHABET[i], p[0], p[1] )
 
 class PlottingOptionPanel( Popup ) :
 
@@ -231,22 +182,19 @@ class PlottingOptionPanel( Popup ) :
 		frm.add_widget( self.plotColor )
 		frm.add_widget( self.axisColor )
 
-		cent = BoxLayout( orientation="vertical" )
-		cent.add_widget( Label( text="Center to :" ) )
-		self.centx = NumericUpDown( value=0, vstep=0.1 )
-		self.centy = NumericUpDown( value=0, vstep=0.1 )
-		cent.add_widget( self.centx )
-		cent.add_widget( self.centy )
+		xRange = BoxLayout( orientation="vertical" )
+		xRange.add_widget( Label( text="X range :" ) )
+		self.xRangeMin = NumericUpDown( value=-1, vstep=0.1 )
+		self.xRangeMax = NumericUpDown( value=1, vstep=0.1 )
+		xRange.add_widget( self.xRangeMin )
+		xRange.add_widget( self.xRangeMax )
 
-		fixed_cent = BoxLayout( orientation="vertical" )
-		fixed_cent.add_widget( Label( text="Fix center?" ) )
-		self.fixed_cent = CheckBox( active=False )
-		fixed_cent.add_widget( self.fixed_cent )
-
-		step = BoxLayout( orientation="vertical" )
-		step.add_widget( Label( text="X Step ( 0=Best ) :" ) )
-		self.step = Slider( min=0, value=0, max=10)
-		step.add_widget( self.step )
+		yRange = BoxLayout( orientation="vertical" )
+		yRange.add_widget( Label( text="Y range :" ) )
+		self.yRangeMin = NumericUpDown( value=-1, vstep=0.1 )
+		self.yRangeMax = NumericUpDown( value=1, vstep=0.1 )
+		yRange.add_widget( self.yRangeMin )
+		yRange.add_widget( self.yRangeMax )
 
 		btnConfirm = Button( text="Ok, Plot!" )
 		btnConfirm.bind( on_press=onConfirm )
@@ -258,9 +206,8 @@ class PlottingOptionPanel( Popup ) :
 		r = BoxLayout( orientation="horizontal" )
 		r.spacing = 15
 		frm.add_widget( r )
-		r.add_widget( cent )
-		r.add_widget( fixed_cent ) 
-		r.add_widget( step )
+		r.add_widget( xRange )
+		r.add_widget( yRange ) 
  
 		cont.add_widget( self.expLabel )
 		cont.add_widget( frm )
@@ -271,7 +218,18 @@ class PlottingOptionPanel( Popup ) :
 						content = cont, \
 						size_hint = ( 0.95,0.95 ) )
 
-	def open( self, someExpression, shellObj ) : 
+		setFont( self.content, FONT_NAME, FONT_SIZE )
+		self.expLabel.font_size = 21
+
+	def open( self, someExpression, shellObj, currentConfig=None ) : 
+		if not currentConfig is None :
+			self.plotColor.setRGB( currentConfig[ "plotColor" ] )
+			self.axisColor.setRGB( currentConfig[ "axisColor" ] )
+			self.xRangeMin.value = float( "%.3f" % currentConfig[ "xRange" ][0] )
+			self.xRangeMax.value = float( "%.3f" % currentConfig[ "xRange" ][1] )
+			self.yRangeMin.value = float( "%.3f" % currentConfig[ "yRange" ][0] )
+			self.yRangeMax.value = float( "%.3f" % currentConfig[ "yRange" ][1] )
+
 		originalStdout = sys.stdout	  
 		sys.stdout = wrString = WrappedString() 
 		shellObj.console.push( "evalf(" + someExpression + ")" )
@@ -286,6 +244,5 @@ class PlottingOptionPanel( Popup ) :
 		
 		return {"axisColor" : self.axisColor.rgb(), \
 				"plotColor" : self.plotColor.rgb(), \
-				"origin"	: (self.centx.value, self.centy.value), \
-				"c_fixed"   : self.fixed_cent.active , \
-				"step"	    : self.step.value }
+				"xRange"	: (self.xRangeMin.value, self.xRangeMax.value), \
+				"yRange"    : (self.yRangeMin.value, self.yRangeMax.value) }
