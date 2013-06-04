@@ -9,30 +9,17 @@ from sympy import *
 from sympy.abc import *
 from sympy.utilities.lambdify import lambdify
 import sys
-
 from keyboard import *
 
-DEBUG = False
 FONT_NAME = "res/ubuntu-font-family-0.80/UbuntuMono-R.ttf"
 FONT_SIZE = 18
-
-class WrappedString() :
-	def __init__( self, s="", **kargs ) :
-		self.s = s
-
-	def write( self, someText ) :
-		self.s += someText
-
-	def contains( self, someText ) :
-		return someText in self.s
-
-	def __str__( self ) :
-		return self.s
 
 class PyShell( BoxLayout ) :
 
 	def __init__( self, plotFoo ) :
+		self._lastOutput = []
 		self.console = InteractiveConsole()
+
 		BoxLayout.__init__( self, orientation="vertical" )
 		frm = BoxLayout( orientation="vertical" )
 		self.listed = TextInput()
@@ -40,6 +27,7 @@ class PyShell( BoxLayout ) :
 		self.listed.readonly = True
 		self.listed.size_hint = 1, 0.3
 		self.listed.font_size = FONT_SIZE
+
 		frm.add_widget( self.listed )
 		self.kb = KiPyKeyboard( self.onBtnExecPress, plotFoo )
 		self.kb.size_hint = 1, 0.7
@@ -47,10 +35,9 @@ class PyShell( BoxLayout ) :
 		frm.size_hint = 1,1
 		self.add_widget( frm )
 
-	def start( self ) : 
-		if not DEBUG :
-			sys.stdout = self
-			sys.stderr = self
+	def start( self ) :
+		sys.stdout = self
+		sys.stderr = self
 		self.shellInit()
 
 	def shellInit( self ) :
@@ -59,6 +46,7 @@ class PyShell( BoxLayout ) :
 			self.console.push( line )
 
 	def write( self, sometext ) :
+		self._lastOutput.append( sometext )
 		self.listed.text += sometext
 
 	def correctInput( self, stat ) :

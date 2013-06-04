@@ -20,7 +20,6 @@ from sympy import *
 from sympy.abc import *
 from sympy.utilities.lambdify import lambdify
 import sys
-from shell import WrappedString
 
 Builder.load_file( "kipycalc.kv" )
 
@@ -28,8 +27,6 @@ ALPHABET = "ABCDEFGHJKILMNOPQRSTUVWXYZ"
 FONT_NAME = "res/ubuntu-font-family-0.80/UbuntuMono-R.ttf"
 FONT_SIZE = 18
 		
-#TODO : FIX PLOTTER FUNCTION CHECKER
-
 class SpecialPoint( Widget ) :
 	
 	point = ListProperty( [ 0, 0 ] )
@@ -87,8 +84,7 @@ class Plotter( Widget ) :
 				y = self.foo( x )
 				points.append( ( x - self.xRange[0] ) * self.ppx )
 				points.append( ( y - self.yRange[0] ) * self.ppy )
-			except ValueError: pass
-			except GraphicsException : pass
+			except : pass
 			x += self.step
 		self.points = points
 		for point in self.spoints : 			
@@ -230,12 +226,10 @@ class PlottingOptionPanel( Popup ) :
 			self.yRangeMin.value = float( "%.3f" % currentConfig[ "yRange" ][0] )
 			self.yRangeMax.value = float( "%.3f" % currentConfig[ "yRange" ][1] )
 
-		originalStdout = sys.stdout	  
-		sys.stdout = wrString = WrappedString() 
 		shellObj.console.push( "evalf(" + someExpression + ")" )
-		sys.stdout = originalStdout
-		if not wrString.contains( "Error" ) :
-			self.expLabel.text = str( wrString )
+		self.expLabel.text = shellObj._lastOutput[-1]
+		if not "Error" in shellObj._lastOutput[-1] :
+			self.expLabel.text = shellObj._lastOutput[-2]
 			Popup.open( self )
 
 	def dismiss( self, forced=False ) :
@@ -245,4 +239,4 @@ class PlottingOptionPanel( Popup ) :
 		return {"axisColor" : self.axisColor.rgb(), \
 				"plotColor" : self.plotColor.rgb(), \
 				"xRange"	: (self.xRangeMin.value, self.xRangeMax.value), \
-				"yRange"    : (self.yRangeMin.value, self.yRangeMax.value) }
+				"yRange"    : (self.yRangeMin.value, self.yRangeMax.value) }, eval( self.expLabel.text )

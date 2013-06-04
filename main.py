@@ -12,8 +12,8 @@ class KiPyCalc( BoxLayout ) :
 	def __init__( self, **kargs ) :
 		BoxLayout.__init__( self, orientation="vertical" )
 		self.shell = PyShell( self.onPlotRequest )
-		self.plotter = None
 		self.add_widget( self.shell ) 
+		self.plotter = None
 		self.mode = "calc"
 		self.plottingOptionPanel = PlottingOptionPanel( self.onPlotConfirm )	  
 		self._fooToPlot = None
@@ -29,16 +29,10 @@ class KiPyCalc( BoxLayout ) :
 			self.plottingOptionPanel.open( self.shell.kb.current.text, self.shell )  
 
 	def onPlotConfirm( self, instance ) :
-		options = self.plottingOptionPanel.dismiss()
-		if not options is None :
-			originalOut = sys.stdout
-			sys.stdout = wrString = WrappedString()
-			self.shell.console.push( "evalf( " + self.shell.kb.current.text + " )" )
-			foo = eval( str( wrString ) )
-			self.plotter = Plotter( foo, **options ) 
-			sys.stdout = originalOut
-			self.clear_widgets()
-			self.add_widget( self.plotter )
+		options, foo = self.plottingOptionPanel.dismiss()
+		self.plotter = Plotter( foo, **options ) 
+		self.clear_widgets()
+		self.add_widget( self.plotter )
 
 	def onReturnKey( self ) :
 		if self.mode == "plot" :
