@@ -31,7 +31,7 @@
 
 
 <SpecialPoint>:
-	lblName: lblName
+	lbl: lbl
 
 	canvas:
 		Color:
@@ -52,7 +52,6 @@
 			width: self.lnw
 			points: ( self.pos[0], 0, self.pos[0], self.height )
 	Label:
-		id: lblName
-		text: self.parent.label
+		id: lbl
 		size: 30, 30
 		pos: self.parent.pos

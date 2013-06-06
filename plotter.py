@@ -25,13 +25,12 @@ Builder.load_file( "kipycalc.kv" )
 
 ALPHABET = "ABCDEFGHJKILMNOPQRSTUVWXYZ"
 FONT_NAME = "res/ubuntu-font-family-0.80/UbuntuMono-R.ttf"
-FONT_SIZE = 18
+FONT_SIZE = 16
 		
 class SpecialPoint( Widget ) :
 	
 	point = ListProperty( [ 0, 0 ] )
-	label = StringProperty( "" )
-	lblName = ObjectProperty( None )
+	lbl = ObjectProperty( None )
 	#line width
 	lnw = NumericProperty( 1 ) 
 	#line color
@@ -41,10 +40,12 @@ class SpecialPoint( Widget ) :
 
 	def __init__( self, **kargs ) :
 		Widget.__init__( self, **kargs )
+		if not "label" in kargs : kargs["label"] = str( self.point )
+		if not "font_size" in kargs : kargs["font_size"] = FONT_SIZE-3
+		self.lbl.text = kargs["label"]
+		self.lbl.font_name = FONT_NAME
+		self.lbl.font_size = kargs["font_size"]
 		self.scale( 0, 0, 1, 1 )
-		if not "label" in kargs : self.label = str( self.point )
-		self.lblName.font_name = FONT_NAME
-		self.lblName.font_size = FONT_SIZE/2
 		
 	def scale( self, minx, miny, ppx, ppy ) :
 		self.pos = [ int((self.point[0]-minx)*ppx), int((self.point[1]-miny)*ppy) ]
@@ -125,7 +126,8 @@ class Plotter( Widget ) :
 				self.add_widget( p )
 				self.indicators.append( p )
 			x += self.x_scale_indicators_step
-		while y <= self.yRange[1] :
+		h = self.height - self.lblPoints.pos[1]
+		while y <= self.yRange[1]-h/self.ppy :
 			if not self.yNearSpecialPoint( y ) :
 				p = SpecialPoint( pcolor=(1,1,1,1), lcolor=(0,0,0,0), point=( 0, y ), label=str(y) )
 				p.scale( self.xRange[0], self.yRange[0], self.ppx, self.ppy )
@@ -146,7 +148,6 @@ class Plotter( Widget ) :
 			d = abs( sp.point[1] - y )
 			if d < D : return True
 		return False
-			
 
 	def movePlot( self ) :
 		dx = ( self.touches[0].px - self.touches[0].x )/( self.ppx )
@@ -211,7 +212,7 @@ class Plotter( Widget ) :
 			if spoints.count( p ) != 1 : spoints.remove( p )
 		#Adding new widgets
 		for i, p in enumerate( spoints ) :
-			sp = SpecialPoint( point=p, size=self.size, label=ALPHABET[i])
+			sp = SpecialPoint( font_size=FONT_SIZE-1, point=p, size=self.size, label=ALPHABET[i])
 			self.add_widget( sp )		
 			self.spoints.append( sp )
 			self.label += "\n%s : [ %.3f, %.3f ]" % ( ALPHABET[i], p[0], p[1] )
