@@ -56,7 +56,6 @@ class Plotter( Widget ) :
 	points = ListProperty( [] )
 	#Special points
 	spoints = ListProperty( [] )
-	label = StringProperty( "" )
 	lblPoints = ObjectProperty( None )
 	#Draw range
 	xRange = ListProperty( [-1,1] )
@@ -196,27 +195,29 @@ class Plotter( Widget ) :
 		#Function intersections with the x axis.
 		try :
 			for x_val in solve( self.expr, x ) :
-				spoints.append( [ x_val, 0 ] )
-		except ( AttributeError, NotImplementedError ) : pass	
+				spoints.append( [ float( x_val ), 0 ] )
+		except : pass	
 		#Function intersections with the y axis.
 		try :
 			y_val = self.expr.subs( x, 0 ).evalf()  
-			if y_val.is_real : spoints.append( [ 0, y_val ] )
-		except ( AttributeError, NotImplementedError ) : pass
+			spoints.append( [ 0, float( y_val ) ] )
+		except : pass
 		#Function stationary points.
 		try :
 			for x_val in solve( self.expr.diff( x ), x ) :
-				spoints.append( [ x_val, self.foo(x_val) ] )
-		except ( AttributeError, NotImplementedError ) : pass
+				spoints.append( [ float( x_val ), self.foo( x_val ) ] )
+		except : pass
 		#Delete duplicates
 		for p in spoints :
 			if spoints.count( p ) != 1 : spoints.remove( p )
 		#Adding new widgets
 		for i, p in enumerate( spoints ) :
-			sp = SpecialPoint( font_size=FONT_SIZE-1, point=p, size=self.size, label=ALPHABET[i])
-			self.add_widget( sp )		
-			self.spoints.append( sp )
-			self.label += "\n%s : [ %.3f, %.3f ]" % ( ALPHABET[i], p[0], p[1] )
+			try :
+				sp = SpecialPoint( font_size=FONT_SIZE-1, point=p, size=self.size, label=ALPHABET[i])
+				self.add_widget( sp )		
+				self.spoints.append( sp )
+				self.lblPoints.text += "\n%s : [ %.3f, %.3f ]" % ( ALPHABET[i], p[0], p[1] )
+			except : pass
 
 class PlottingOptionPanel( Popup ) :
 
