@@ -35,25 +35,24 @@
 
 	canvas:
 		Color:
-			rgb: 1, 0, 0, 1
+			rgb: self.pcolor
 		Point:
 			pointsize: 2
 			points: self.pos
 		Color:
-			rgb: 0.6, 0.6, 0.6, 1
+			rgba: self.lcolor
 		Line:
 			dash_length: 5
 			dash_offset: 10
-			width: 1
+			width: self.lnw
 			points: ( 0, self.pos[1], self.width, self.pos[1] )
 		Line:
 			dash_length: 5
 			dash_offset: 10
-			width: 1
+			width: self.lnw
 			points: ( self.pos[0], 0, self.pos[0], self.height )
 	Label:
 		id: lblName
 		text: self.parent.label
-		size: 50, 50
+		size: 30, 30
 		pos: self.parent.pos
-

@@ -32,13 +32,19 @@ class SpecialPoint( Widget ) :
 	point = ListProperty( [ 0, 0 ] )
 	label = StringProperty( "" )
 	lblName = ObjectProperty( None )
+	#line width
+	lnw = NumericProperty( 1 ) 
+	#line color
+	lcolor = ListProperty( [ 0.6, 0.6, 0.6, 1 ] )
+	#point color
+	pcolor = ListProperty( [ 1, 0, 0, 1 ] ) 
 
 	def __init__( self, **kargs ) :
 		Widget.__init__( self, **kargs )
 		self.scale( 0, 0, 1, 1 )
 		if not "label" in kargs : self.label = str( self.point )
 		self.lblName.font_name = FONT_NAME
-		self.lblName.font_size = FONT_SIZE
+		self.lblName.font_size = FONT_SIZE/2
 		
 	def scale( self, minx, miny, ppx, ppy ) :
 		self.pos = [ int((self.point[0]-minx)*ppx), int((self.point[1]-miny)*ppy) ]
@@ -57,7 +63,11 @@ class Plotter( Widget ) :
 	#Plotter resolution
 	ppx = NumericProperty( 0 )
 	ppy = NumericProperty( 0 )
-	#Other options
+	#indicators
+	x_scale_indicators_step = NumericProperty( 1 )
+	y_scale_indicators_step = NumericProperty( 1 )
+	indicators = ListProperty( [] )
+	#Other things
 	pinchS = NumericProperty( 0.1 )
 	plotColor = ListProperty( [0,1,0] )
 	axisColor = ListProperty( [1,1,1] )
@@ -75,6 +85,7 @@ class Plotter( Widget ) :
 		self.setup()
 		self.fooStudy()
 		self.evalPoints()  
+		self.setIndicators()
 
 	def evalPoints( self ) :
 		points = []
@@ -96,6 +107,46 @@ class Plotter( Widget ) :
 		self.ppx = self.width / xToDisplay
 		self.ppy = self.height / yToDisplay
 		self.step = xToDisplay / (self.width*3)
+	
+	def setIndicators( self ) :
+		#Deleting old indicators
+		for i in self.indicators : self.remove_widget( i )
+		self.indicators = []
+
+		#Setting up x and y values
+		x = self.x_scale_indicators_step * ( int(self.xRange[0]) / int(self.x_scale_indicators_step) )
+		y = self.y_scale_indicators_step * ( int(self.yRange[0]) / int(self.y_scale_indicators_step) )
+		
+		#Adding new indicators
+		while x <= self.xRange[1] :
+			if not self.xNearSpecialPoint( x ) :
+				p = SpecialPoint( pcolor=(1,1,1,1), lcolor=(0,0,0,0), point=( x, 0 ), label=str(x) )
+				p.scale( self.xRange[0], self.yRange[0], self.ppx, self.ppy )
+				self.add_widget( p )
+				self.indicators.append( p )
+			x += self.x_scale_indicators_step
+		while y <= self.yRange[1] :
+			if not self.yNearSpecialPoint( y ) :
+				p = SpecialPoint( pcolor=(1,1,1,1), lcolor=(0,0,0,0), point=( 0, y ), label=str(y) )
+				p.scale( self.xRange[0], self.yRange[0], self.ppx, self.ppy )
+				self.add_widget( p )
+				self.indicators.append( p )
+			y += self.y_scale_indicators_step
+	
+	def xNearSpecialPoint( self, x ) :
+		D = abs( self.xRange[0] - self.xRange[1] ) / 20
+		for sp in self.spoints : 
+			d = abs( sp.point[0] - x )
+			if d < D : return True
+		return False
+
+	def yNearSpecialPoint( self, y ) :
+		D = abs( self.yRange[0] - self.yRange[1] ) / 20
+		for sp in self.spoints : 
+			d = abs( sp.point[1] - y )
+			if d < D : return True
+		return False
+			
 
 	def movePlot( self ) :
 		dx = ( self.touches[0].px - self.touches[0].x )/( self.ppx )
@@ -123,7 +174,7 @@ class Plotter( Widget ) :
 			if t.uid == touch.uid:
 				self.touches.remove( t )
 		self.touching = False
-		self.evalPoints()
+		self.setIndicators()		
 
 	def on_touch_move( self, touch ) :
 		#check if the touch is sigle or multiple
@@ -144,17 +195,17 @@ class Plotter( Widget ) :
 		try :
 			for x_val in solve( self.expr, x ) :
 				spoints.append( [ x_val, 0 ] )
-		except NotImplementedError : pass	
+		except ( AttributeError, NotImplementedError ) : pass	
 		#Function intersections with the y axis.
 		try :
 			y_val = self.expr.subs( x, 0 ).evalf()  
 			if y_val.is_real : spoints.append( [ 0, y_val ] )
-		except NotImplementedError : pass
+		except ( AttributeError, NotImplementedError ) : pass
 		#Function stationary points.
 		try :
 			for x_val in solve( self.expr.diff( x ), x ) :
 				spoints.append( [ x_val, self.foo(x_val) ] )
-		except NotImplementedError : pass
+		except ( AttributeError, NotImplementedError ) : pass
 		#Delete duplicates
 		for p in spoints :
 			if spoints.count( p ) != 1 : spoints.remove( p )
@@ -226,9 +277,14 @@ class PlottingOptionPanel( Popup ) :
 			self.yRangeMin.value = float( "%.3f" % currentConfig[ "yRange" ][0] )
 			self.yRangeMax.value = float( "%.3f" % currentConfig[ "yRange" ][1] )
 
+		shellObj._lastOutput = []
 		shellObj.console.push( "evalf(" + someExpression + ")" )
 		self.expLabel.text = shellObj._lastOutput[-1]
-		if not "Error" in shellObj._lastOutput[-1] :
+
+		fullMsg = ""
+		for msgPart in shellObj._lastOutput : fullMsg += "\n" + msgPart
+
+		if not "Error" in fullMsg :
 			self.expLabel.text = shellObj._lastOutput[-2]
 			Popup.open( self )
 

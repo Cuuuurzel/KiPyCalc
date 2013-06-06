@@ -5,6 +5,7 @@ from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
+from kivy.uix.scrollview import ScrollView
 from sympy import *
 from sympy.abc import *
 from sympy.utilities.lambdify import lambdify
@@ -17,16 +18,16 @@ FONT_SIZE = 18
 class PyShell( BoxLayout ) :
 
 	def __init__( self, plotFoo ) :
+		BoxLayout.__init__( self, orientation="vertical" )
 		self._lastOutput = []
 		self.console = InteractiveConsole()
 
-		BoxLayout.__init__( self, orientation="vertical" )
 		frm = BoxLayout( orientation="vertical" )
 		self.listed = TextInput()
+		self.listed.font_size = FONT_SIZE
 		self.listed.font_name = FONT_NAME
 		self.listed.readonly = True
 		self.listed.size_hint = 1, 0.3
-		self.listed.font_size = FONT_SIZE
 
 		frm.add_widget( self.listed )
 		self.kb = KiPyKeyboard( self.onBtnExecPress, plotFoo )
@@ -60,8 +61,7 @@ class PyShell( BoxLayout ) :
 		for key in keys : 
 			if key in stat.upper() : 
 				return stat, False
-		return "ans = " + stat, True
-			
+		return "ans = " + stat, True			
 
 	def onBtnExecPress( self, instance ) :
 		stat = self.kb.current.text + "\n"
@@ -82,17 +82,3 @@ class PyShell( BoxLayout ) :
 			#Print ANS, flush input buffer.			
 			if printANS : self.console.push( "print( ans )\n" )
 			self.kb.flush() 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
