@@ -94,8 +94,9 @@ class Plotter( Widget ) :
 		while x < self.xRange[1] : 
 			try :
 				y = self.foo( x )
-				points.append( ( x - self.xRange[0] ) * self.ppx )
-				points.append( ( y - self.yRange[0] ) * self.ppy )
+				if y.__class__ in ( int, float ) :
+					points.append( ( x - self.xRange[0] ) * self.ppx )
+					points.append( ( y - self.yRange[0] ) * self.ppy )
 			except : pass
 			x += self.step
 		self.points = points
