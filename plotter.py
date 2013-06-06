@@ -15,7 +15,7 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
 from kivyextras import *
 from time import time
-from math import sqrt
+from math import sqrt, floor
 from sympy import *
 from sympy.abc import *
 from sympy.utilities.lambdify import lambdify
@@ -65,8 +65,8 @@ class Plotter( Widget ) :
 	ppx = NumericProperty( 0 )
 	ppy = NumericProperty( 0 )
 	#indicators
-	x_scale_indicators_step = NumericProperty( 1 )
-	y_scale_indicators_step = NumericProperty( 1 )
+	x_scale_indicators_step = NumericProperty( 1.0 )
+	y_scale_indicators_step = NumericProperty( 1.0 )
 	indicators = ListProperty( [] )
 	#Other things
 	pinchS = NumericProperty( 0.1 )
@@ -104,11 +104,13 @@ class Plotter( Widget ) :
 			point.scale( self.xRange[0], self.yRange[0], self.ppx, self.ppy )
 
 	def setup( self ) : 
-		xToDisplay = float( self.xRange[1]-self.xRange[0] )
-		yToDisplay = float( self.yRange[1]-self.yRange[0] )
+		xToDisplay = abs( float( self.xRange[1]-self.xRange[0] ) )
+		yToDisplay = abs( float( self.yRange[1]-self.yRange[0] ) )
 		self.ppx = self.width / xToDisplay
 		self.ppy = self.height / yToDisplay
 		self.step = xToDisplay / (self.width*3)
+		self.x_scale_indicators_step = 1 + int( xToDisplay / 10 )
+		self.y_scale_indicators_step = 1 + int( yToDisplay / 10 )
 	
 	def setIndicators( self ) :
 		#Deleting old indicators
@@ -116,8 +118,8 @@ class Plotter( Widget ) :
 		self.indicators = []
 
 		#Setting up x and y values
-		x = self.x_scale_indicators_step * ( int(self.xRange[0]) / int(self.x_scale_indicators_step) )
-		y = self.y_scale_indicators_step * ( int(self.yRange[0]) / int(self.y_scale_indicators_step) )
+		y = int( floor( self.yRange[0] ) )
+		x = int( floor( self.xRange[0] ) )
 		
 		#Adding new indicators
 		while x <= self.xRange[1] :
@@ -139,15 +141,13 @@ class Plotter( Widget ) :
 	def xNearSpecialPoint( self, x ) :
 		D = abs( self.xRange[0] - self.xRange[1] ) / 20
 		for sp in self.spoints : 
-			d = abs( sp.point[0] - x )
-			if d < D : return True
+			if abs( sp.point[0] - x ) < D : return True
 		return False
 
 	def yNearSpecialPoint( self, y ) :
 		D = abs( self.yRange[0] - self.yRange[1] ) / 20
 		for sp in self.spoints : 
-			d = abs( sp.point[1] - y )
-			if d < D : return True
+			if abs( sp.point[1] - y ) < D : return True
 		return False
 
 	def movePlot( self ) :
