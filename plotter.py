@@ -41,7 +41,7 @@ class SpecialPoint( Widget ) :
 	def __init__( self, **kargs ) :
 		Widget.__init__( self, **kargs )
 		if not "label" in kargs : kargs["label"] = str( self.point )
-		if not "font_size" in kargs : kargs["font_size"] = FONT_SIZE-3
+		if not "font_size" in kargs : kargs["font_size"] = FONT_SIZE-2
 		self.lbl.text = kargs["label"]
 		self.lbl.font_name = FONT_NAME
 		self.lbl.font_size = kargs["font_size"]
@@ -216,7 +216,7 @@ class Plotter( Widget ) :
 				sp = SpecialPoint( font_size=FONT_SIZE-1, point=p, size=self.size, label=ALPHABET[i])
 				self.add_widget( sp )		
 				self.spoints.append( sp )
-				self.lblPoints.text += "\n%s : [ %.3f, %.3f ]" % ( ALPHABET[i], p[0], p[1] )
+				self.lblPoints.text += "\n%s : ( %.3f, %.3f )" % ( ALPHABET[i], p[0], p[1] )
 			except : pass
 
 class PlottingOptionPanel( Popup ) :
@@ -269,7 +269,7 @@ class PlottingOptionPanel( Popup ) :
 						size_hint = ( 0.95,0.95 ) )
 
 		setFont( self.content, FONT_NAME, FONT_SIZE )
-		self.expLabel.font_size = 21
+		self.expLabel.font_size = FONT_SIZE+5
 
 	def open( self, someExpression, shellObj, currentConfig=None ) : 
 		if not currentConfig is None :
