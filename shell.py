@@ -14,6 +14,7 @@ from keyboard import *
 
 FONT_NAME = "res/ubuntu-font-family-0.80/UbuntuMono-R.ttf"
 FONT_SIZE = 18
+DEBUG = False
 
 class PyShell( BoxLayout ) :
 
@@ -37,8 +38,9 @@ class PyShell( BoxLayout ) :
 		self.add_widget( frm )
 
 	def start( self ) :
-		sys.stdout = self
-		sys.stderr = self
+		if not DEBUG :
+			sys.stdout = self
+			sys.stderr = self
 		self.shellInit()
 
 	def shellInit( self ) :
