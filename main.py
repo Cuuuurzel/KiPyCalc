@@ -46,6 +46,38 @@ class KiPyCalc( BoxLayout ) :
 		if self.mode == "plot" :
 			self.onPlotRequest( None )
 			return True
+		else : 
+			AboutMenu().open()
+			return True
+
+
+class AboutMenu( Popup ) :
+
+	def __init__( self ) :
+		w, h = screen_size()
+		frm = BoxLayout( orientation="vertical" )
+		cont = BoxLayout( orientation="vertical" )
+		cont.spacing = 30
+		lbl = Label( markup=True, text="""
+Welcome to the About Panel.
+
+[color=#FFaaaa]Do want to make a bug segnalation?[/color]
+[color=#aaaaFF]Just write to me : cuuuurzel@gmail.com[/color]
+
+[color=#FFaaaa]Do you have a feature request?[/color]
+[color=#aaaaFF]Up ;)[/color]
+
+[color=#FFaaaa]Do you want to pay me a beer?[/color]
+[color=#aaaaFF]Consider buy the Non-Beta version of this app![/color]
+""")
+		cont.add_widget( lbl )
+		Popup.__init__( self, \
+						title = 'About Menu', \
+						content = cont, \
+						size_hint = ( 0.95,0.95 ) )
+
+	def dismiss( self ) :
+		Popup.dismiss( self )
 
 
 class KiPyCalcApp( App ) : 

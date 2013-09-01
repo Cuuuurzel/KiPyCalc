@@ -76,7 +76,7 @@ class KiPyKeyboard( BoxLayout ) :
     def loadStaticKeys( self ) :
         k1 = "<- space tab \\n ->".split( " " )
         k2 = "{ [ ( , ) ] }".split( " " )
-        k3 = "evalf print undo clear shift".split( " " )
+        k3 = "evalf ans print undo clear shift".split( " " )
         k4 = "+ - * / ** =".split( " " ) + [ u"√" ]
         default_keys = ( k1, k2, k3, k4 )
 
@@ -135,7 +135,6 @@ class KiPyKeyboard( BoxLayout ) :
         elif command == u"π" :    toInsert = "pi"
         elif command == "clear" : self.current.text = u""
         elif command == "space" : toInsert = " "
-        elif command == "ans" :   toInsert = "ANS"
         elif command == "shift" : self.onShift()
         elif command == "\\n" :   toInsert = "\n"
         elif command == "tab" :   toInsert = "    "
