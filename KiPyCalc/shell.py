@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from code import InteractiveConsole
+import keyword
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
@@ -59,7 +60,7 @@ class PyShell( BoxLayout ) :
 		if stat.upper() in ( "ANS\n", "ANS" ) :
 			return "print( ans )", False
 		
-		keys = [ "DEF", "FOR", "WHILE", "IMPORT", "EXEC" ]
+		keys = map( lambda word : word.upper(), keyword.kwlist ) #keyword.kwlist
 		for key in keys : 
 			if key in stat.upper() : 
 				return stat, False
