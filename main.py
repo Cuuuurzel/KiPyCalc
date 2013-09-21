@@ -61,14 +61,17 @@ class AboutMenu( Popup ) :
 		lbl = Label( markup=True, text="""
 Welcome to the About Panel.
 
-[color=#FFaaaa]Do want to make a bug segnalation?[/color]
-[color=#aaaaFF]Just write to me : cuuuurzel@gmail.com[/color]
+[color=#FFaaaa]If you'd like to
+plot more function at once,
+or just want to pay me a beer...[/color]
+[color=#aaaaFF]Consider buying the paid version this app!
+(Also a good rating makes me happy)[/color]
 
-[color=#FFaaaa]Do you have a feature request?[/color]
-[color=#aaaaFF]Up ;)[/color]
-
-[color=#FFaaaa]Do you want to pay me a beer?[/color]
-[color=#aaaaFF]Consider buy the Non-Beta version of this app![/color]
+[color=#FFaaaa]For any bug segnalation,
+question,
+or feature request, 
+just write to me : [/color]
+[color=#aaaaFF]cuuuurzel@gmail.com[/color]
 """)
 		cont.add_widget( lbl )
 		Popup.__init__( self, \

@@ -1,48 +1,13 @@
 #:kivy 1.0
 
-<ColorChooser>:
-    sldr: sldr
-    sldg: sldg
-    sldb: sldb
-
-    BoxLayout:
-        orientation: 'vertical'
-
-        Label:
-            text: root.label
-
-        BoxLayout:
-            orientation: 'horizontal'
-            Label:
-                text: 'R :' 
-                size_hint: 0.1, 1
-            Slider:
-                id: sldr
-                min: 0
-                max: 100
-                value: 50 
-
-        BoxLayout:
-            orientation: 'horizontal'
-            Label:
-                text: 'G :' 
-                size_hint: 0.1, 1
-            Slider:
-                id: sldg
-                min: 0
-                max: 100
-                value: 50 
-
-        BoxLayout:
-            orientation: 'horizontal'
-            Label:
-                text: 'B :' 
-                size_hint: 0.1, 1
-            Slider:
-                id: sldb
-                min: 0
-                max: 100
-                value: 50
+<ColoredButton>:
+    
+	canvas:
+		Color:
+			rgb: self.color
+		Rectangle:
+			size: self.size
+			pos: self.pos
 
 <NumericUpDown>:
     txtvalue: txtvalue

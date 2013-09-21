@@ -13,13 +13,16 @@ from kivy.uix.popup import Popup
 from kivy.uix.slider import Slider
 from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
-from kivyextras import *
 from time import time
 from math import sqrt, floor
+from string import join
 from sympy import *
 from sympy.abc import *
 from sympy.utilities.lambdify import lambdify
 import sys
+
+from kivyextras import *
+from shell import DEBUG
 
 Builder.load_file( "kipycalc.kv" )
 
@@ -220,18 +223,43 @@ class Plotter( Widget ) :
 			except : pass
 
 class PlottingOptionPanel( Popup ) :
-
+	
 	def __init__( self, onConfirm ) :
+		Popup.__init__( self, \
+						title = 'Plotting Options', \
+						content = self._generateContent( onConfirm ), \
+						size_hint = ( 0.95,0.95 ) )
+
+		setFont( self.content, FONT_NAME, FONT_SIZE )
+		self.expLabel.font_size = FONT_SIZE+5
+
+	def _generateContent( self, onConfirm ) :
 		w, h = screen_size()
-		frm = BoxLayout( orientation="vertical" )
 		cont = BoxLayout( orientation="vertical" )
 		cont.spacing = 30
 
-		self.plotColor = ColorChooser( label="Plot Color :", rgb=[ 0, 1, 0 ] )
-		self.axisColor = ColorChooser( label="Axis Color :", rgb=[ 1, 1, 1 ] )
-		frm.add_widget( self.plotColor )
-		frm.add_widget( self.axisColor )
+		colorChoosingZone = self._generateColorChoosingZone()
+		areaChoosingZone = self._generateAreaChoosingZone()
 
+		cont.add_widget( self._generateExpLabel() )
+		cont.add_widget( colorChoosingZone )
+		cont.add_widget( areaChoosingZone )
+		cont.add_widget( self._generateConfirmButton( onConfirm ) )
+		
+		return cont
+
+	def _generateExpLabel( self ) : 
+		self.expLabel = Label()
+		self.expLabel.size_hint = 1, 0.2
+		return self.expLabel
+
+	def _generateConfirmButton( self, onConfirm ) :
+		btnConfirm = Button( text="Ok, Plot!" )
+		btnConfirm.bind( on_press=onConfirm )
+		btnConfirm.size_hint = 1, 0.3
+		return btnConfirm
+
+	def _generateAreaChoosingZone( self ) :
 		xRange = BoxLayout( orientation="vertical" )
 		xRange.add_widget( Label( text="X range :" ) )
 		self.xRangeMin = NumericUpDown( value=-1, vstep=0.1 )
@@ -246,35 +274,52 @@ class PlottingOptionPanel( Popup ) :
 		yRange.add_widget( self.yRangeMin )
 		yRange.add_widget( self.yRangeMax )
 
-		btnConfirm = Button( text="Ok, Plot!" )
-		btnConfirm.bind( on_press=onConfirm )
-		btnConfirm.size_hint = 1, 0.1
+		areaChoosingZone = BoxLayout( orientation="horizontal" )
+		areaChoosingZone.spacing = 30
+		areaChoosingZone.add_widget( xRange )
+		areaChoosingZone.add_widget( yRange ) 
 
-		self.expLabel = Label()
-		self.expLabel.size_hint = 1, 0.1
+		return areaChoosingZone
 
-		r = BoxLayout( orientation="horizontal" )
-		r.spacing = 15
-		frm.add_widget( r )
-		r.add_widget( xRange )
-		r.add_widget( yRange ) 
- 
-		cont.add_widget( self.expLabel )
-		cont.add_widget( frm )
-		cont.add_widget( btnConfirm )
+	def _generateColorChoosingZone( self ) :		
+		self.axisColorChooser = ColorChooser( rgb = [ 1, 1, 1 ], \
+                                              label = "Axis color :", \
+                                              size_hint = ( 0.8, 0.4 ), \
+                                              onDone = self.updateAxisColor )
+		self.btnAxisColor = ColoredButton( rgb=[1,1,1] )
+		self.btnAxisColor.bind( on_press=self.axisColorChooser.open )
+		axisColorZone = BoxLayout()
+		axisColorZone.add_widget( Label( text="Axis color : " ) )
+		axisColorZone.add_widget( self.btnAxisColor )
 
-		Popup.__init__( self, \
-						title = 'Plotting Options', \
-						content = cont, \
-						size_hint = ( 0.95,0.95 ) )
+		self.plotColorChooser = ColorChooser( rgb = [ 0, 1, 0 ], \
+                                              label = "Plot color :", \
+                                              size_hint = ( 0.8, 0.4 ), \
+                                              onDone = self.updatePlotColor )
+		self.btnPlotColor = ColoredButton( rgb=[0,1,0] )
+		self.btnPlotColor.bind( on_press=self.plotColorChooser.open )
+		plotColorZone = BoxLayout()
+		plotColorZone.add_widget( Label( text="Plot color : " ) )
+		plotColorZone.add_widget( self.btnPlotColor )
+		
+		colorChoosingZone = BoxLayout( orientation="vertical" )
+		colorChoosingZone.add_widget( axisColorZone )
+		colorChoosingZone.add_widget( plotColorZone )
 
-		setFont( self.content, FONT_NAME, FONT_SIZE )
-		self.expLabel.font_size = FONT_SIZE+5
+		return colorChoosingZone
+
+	def updateAxisColor( self, instance ) :
+		self.btnAxisColor.color = instance.rgb()
+
+	def updatePlotColor( self, instance ) :
+		self.btnPlotColor.color = instance.rgb()
 
 	def open( self, someExpression, shellObj, currentConfig=None ) : 
 		if not currentConfig is None :
-			self.plotColor.setRGB( currentConfig[ "plotColor" ] )
-			self.axisColor.setRGB( currentConfig[ "axisColor" ] )
+			self.plotColorChooser.setRGB( currentConfig[ "plotColor" ] )
+			self.axisColorChooser.setRGB( currentConfig[ "axisColor" ] )
+			self.btnPlotColor.color = currentConfig[ "plotColor" ]
+			self.btnAxisColor.color = currentConfig[ "axisColor" ]
 			self.xRangeMin.value = float( "%.3f" % currentConfig[ "xRange" ][0] )
 			self.xRangeMax.value = float( "%.3f" % currentConfig[ "xRange" ][1] )
 			self.yRangeMin.value = float( "%.3f" % currentConfig[ "yRange" ][0] )
@@ -282,20 +327,26 @@ class PlottingOptionPanel( Popup ) :
 
 		shellObj._lastOutput = []
 		shellObj.console.push( "evalf(" + someExpression + ")" )
-		self.expLabel.text = shellObj._lastOutput[-1]
 
-		fullMsg = ""
-		for msgPart in shellObj._lastOutput : fullMsg += "\n" + msgPart
-
-		if not "Error" in fullMsg :
-			self.expLabel.text = shellObj._lastOutput[-2]
+		if not DEBUG : 
+			self.expLabel.text = shellObj._lastOutput[-1]
+			fullMsg = join( shellObj._lastOutput, "\n" )
+			if not "Error" in fullMsg :
+				self.expLabel.text = shellObj._lastOutput[-2]
+				Popup.open( self )
+		else : 
+			#TODO, Find a best way for debug
+			self.expLabel.text = "x**2 - 4*x" #Some expression
 			Popup.open( self )
 
 	def dismiss( self, forced=False ) :
-		Popup.dismiss( self )
-		if forced : return
-		
-		return {"axisColor" : self.axisColor.rgb(), \
-				"plotColor" : self.plotColor.rgb(), \
-				"xRange"	: (self.xRangeMin.value, self.xRangeMax.value), \
-				"yRange"    : (self.yRangeMin.value, self.yRangeMax.value) }, eval( self.expLabel.text )
+		if self.axisColorChooser.isShown : self.axisColorChooser.dismiss()
+		elif self.plotColorChooser.isShown : self.plotColorChooser.dismiss()
+		else :
+			Popup.dismiss( self )
+			if forced : return
+			config = { "axisColor" : self.axisColorChooser.rgb(), \
+					   "plotColor" : self.plotColorChooser.rgb(), \
+	   				   "xRange"	: (self.xRangeMin.value, self.xRangeMax.value), \
+					   "yRange"    : (self.yRangeMin.value, self.yRangeMax.value) }
+			return config, eval( self.expLabel.text )
