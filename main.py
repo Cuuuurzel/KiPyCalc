@@ -3,9 +3,13 @@
 from kivy.app import App
 from kivy.base import EventLoop
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.button import Button
 from shell import *
 from plotter import *
 from kivyextras import *
+
+FONT_NAME = "res/ubuntu-font-family-0.80/UbuntuMono-R.ttf"
+FONT_SIZE = 16
 
 class KiPyCalc( BoxLayout ) :
 
@@ -58,26 +62,52 @@ class AboutMenu( Popup ) :
 		frm = BoxLayout( orientation="vertical" )
 		cont = BoxLayout( orientation="vertical" )
 		cont.spacing = 30
-		lbl = Label( markup=True, text="""
-Welcome to the About Panel.
 
-[color=#FFaaaa]If you'd like to
-plot more function at once,
-or just want to pay me a beer...[/color]
-[color=#aaaaFF]Consider buying the paid version this app!
-(Also a good rating makes me happy)[/color]
+		self.text1="""
+[color=#aaaaFF]Thank you for downloading this app![/color]
+
+[color=#aaFFaa]To plot more function at once,
+just list them, and press "plot", for example :
+x**3 -4*x, x**3 -3*x, x**3 -2*x 
+separated by comma.[/color]
 
 [color=#FFaaaa]For any bug segnalation,
-question,
+question, 
 or feature request, 
 just write to me : [/color]
 [color=#aaaaFF]cuuuurzel@gmail.com[/color]
-""")
-		cont.add_widget( lbl )
+"""
+		self.text2 = """
+[color=#44DD44]More technical details...
+The plotter will accept any list-like input!
+for example :
+foos = []
+for i in range(1,4) :
+    foos.append( x**3 - i*x )
+and then type "foos" and press plot...
+...Or, less trivially :
+map( lambda f,i : f - i*x, \\
+     [ x**3 ]*10, \\
+     range(0,10) )[/color]
+"""
+
+		self.lbl = Label( markup=True, text=self.text1 )
+		cont.add_widget( self.lbl )
+		btn = Button( text="..." )
+		btn.size_hint = 1, 0.1
+		btn.bind( on_press=self.more )
+		cont.add_widget( btn )
 		Popup.__init__( self, \
 						title = 'About Menu', \
 						content = cont, \
 						size_hint = ( 0.95,0.95 ) )
+		setFont( self.content, FONT_NAME, FONT_SIZE )
+
+	def more( self, instance ) : 
+		if self.lbl.text == self.text1 :
+			self.lbl.text = self.text2
+		else : 
+			self.lbl.text = self.text1
 
 	def dismiss( self ) :
 		Popup.dismiss( self )
