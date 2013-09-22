@@ -1,4 +1,11 @@
 # -*- coding: utf-8 -*-
+############################################################
+# I'm a lazy developer.                                    #
+# And as a lazy developer sometimes I put shit in my code. #
+# Expecially when I'm sure that anyone will read my code.  #
+# So, if you're reading this, please...                    #
+# ...Don't judge me.                                       #
+############################################################
 
 from kivy.app import App
 import kivy.graphics as kg
@@ -42,7 +49,7 @@ class SpecialPoint( Widget ) :
 	pcolor = ListProperty( [ 1, 0, 0, 1 ] ) 
 
 	def __init__( self, **kargs ) :
-		Widget.__init__( self, **kargs )
+		super( SpecialPoint, self ).__init__( **kargs )
 		if not "label" in kargs : kargs["label"] = str( self.point )
 		if not "font_size" in kargs : kargs["font_size"] = FONT_SIZE-2
 		self.lbl.text = kargs["label"]
@@ -53,7 +60,173 @@ class SpecialPoint( Widget ) :
 	def scale( self, minx, miny, ppx, ppy ) :
 		self.pos = [ int((self.point[0]-minx)*ppx), int((self.point[1]-miny)*ppy) ]
 
+
+class DrawableFunction( Widget ) :
+
+	foo = ObjectProperty( None )
+	points = ListProperty( [] )
+	sPoints = ListProperty( [] )
+	step = NumericProperty( 0 )
+	
+	def __init__( self, **kargs ) :
+		super( DrawableFunction, self ).__init__( **kargs )
+
+	def study( self ) :
+		spoints = []
+		#Function intersections with the x axis.
+		try :
+			for x_val in solve( self.expr, x ) :
+				spoints.append( [ float( x_val ), 0 ] )
+		except : pass	
+		#Function intersections with the y axis.
+		try :
+			y_val = self.expr.subs( x, 0 ).evalf()  
+			spoints.append( [ 0, float( y_val ) ] )
+		except : pass
+		#Function stationary points.
+		try :
+			for x_val in solve( self.expr.diff( x ), x ) :
+				spoints.append( [ float( x_val ), self.foo( x_val ) ] )
+		except : pass
+		#Delete duplicates
+		for p in spoints :
+			if spoints.count( p ) != 1 : spoints.remove( p )
+
+	def eval( self, xMin, xMax, yMin, yMax, ppx, ppy ) :
+		points = []
+		x = xMin
+		while x < xMax : 
+			try :
+				y = self.foo( x )
+				if y.__class__ in ( int, float ) :
+					points.append( ( x - xMin ) * ppx )
+					points.append( ( y - yMin ) * ppy )
+			except : pass
+			x += self.step
+		self.points = points
+
+		for point in self.sPoints : 			
+			point.scale( xMin, yMin, ppx, ppy )
+		
 class Plotter( Widget ) :
+
+	functions = ListProperty( [] )
+	#Draw range
+	xRange = ListProperty( [-1,1] )
+	yRange = ListProperty( [-1,1] )
+	#Plotter resolution
+	ppx = NumericProperty( 0 )
+	ppy = NumericProperty( 0 )
+	#indicators
+	x_scale_indicators_step = NumericProperty( 1.0 )
+	y_scale_indicators_step = NumericProperty( 1.0 )
+	indicators = ListProperty( [] )
+	#Other things
+	pinchS = NumericProperty( 0.1 )
+	plotColor = ListProperty( [0,1,0] )
+	axisColor = ListProperty( [1,1,1] )
+	#List to handle touches
+	touches = ListProperty( [] )
+	touching = BooleanProperty( False )
+
+	def __init__( self, functions, **kargs ) : 
+		Widget.__init__( self, **kargs )
+		self.width, self.height = screen_size()
+		self.lblPoints = Label( font_name = FONT_NAME, 
+                                font_size = FONT_SIZE )
+		self.add_widget( self.lblPoints )
+		self.setup( functions )
+		self.fooStudy()
+		self.evalPoints()  
+		self.prepareCanvas()
+
+	def prepareCanvas( self ) :
+		for foo in self.functions :
+			with self.canvas :
+				Line( points=foo.points, width=1, group="functions" )
+					
+	def restoreCanvas( self ) :
+		self.canvas.remove_group( "functions" )
+		#self.canvas.remove_group( "sPoints" )
+
+	def evalPoints( self ) :
+		for foo in self.functions :
+			foo.eval( self.xRange[0], self.xRange[1], 
+                      self.yRange[0], self.yRange[1],
+                      self.ppx, self.ppy )
+
+	def setup( self, functions ) : 
+		xToDisplay = abs( float( self.xRange[1]-self.xRange[0] ) )
+		yToDisplay = abs( float( self.yRange[1]-self.yRange[0] ) )
+		self.ppx = self.width / xToDisplay
+		self.ppy = self.height / yToDisplay
+		self.step = xToDisplay / (self.width*3)
+		self.x_scale_indicators_step = 1 + int( xToDisplay / 10 )
+		self.y_scale_indicators_step = 1 + int( yToDisplay / 10 )
+
+		for foo in functions :
+			self.functions.append( 
+				DrawableFunction( foo = lambdify( x, foo ), \
+								  step = 1	
+				) 
+			)
+	 
+	def movePlot( self ) :
+		dx = ( self.touches[0].px - self.touches[0].x )/( self.ppx )
+		dy = ( self.touches[0].py - self.touches[0].y )/( self.ppy )
+		self.xRange = self.xRange[0]+dx, self.xRange[1]+dx
+		self.yRange = self.yRange[0]+dy, self.yRange[1]+dy
+		self.evalPoints()
+	 
+	def pinchZoom( self ) :
+		dpx = abs( self.touches[0].psx - self.touches[1].psx )
+		dx  = abs( self.touches[0].sx  - self.touches[1].sx  )
+		dpy = abs( self.touches[0].psy - self.touches[1].psy )
+		dy  = abs( self.touches[0].sy  - self.touches[1].sy  )
+		if dx > self.pinchS : self.xRange = [ xl*dpx/dx for xl in self.xRange ]
+		if dy > self.pinchS : self.yRange = [ yl*dpy/dy for yl in self.yRange ]
+		self.setup()
+		self.evalPoints()
+	
+	def on_touch_down( self, touch ) :
+		self.touches.append( touch )
+		return True
+
+	def on_touch_up( self, touch ) :
+		for t in self.touches :
+			if t.uid == touch.uid:
+				self.touches.remove( t )
+		self.touching = False
+		self.setIndicators()		
+
+	def on_touch_move( self, touch ) :
+		#check if the touch is sigle or multiple
+		if len( self.touches ) == 1 :
+			self.movePlot()
+		elif len( self.touches ) == 2 :
+			self.pinchZoom() 
+
+	def getConfig( self ) :
+		return { "plotColor" : self.plotColor, \
+                 "axisColor" : self.axisColor, \
+                 "xRange" : self.xRange, \
+                 "yRange" : self.yRange }
+
+	def fooStudy( self ) :
+		for foo in self.functions :
+			foo.study()			
+			for i, p in enumerate( foo.sPoints ) :
+				try :
+					sp = SpecialPoint( font_size=FONT_SIZE-1, point=p, size=self.size, label=ALPHABET[i])
+					self.add_widget( sp )		
+					self.lblPoints.text += "\n%s : ( %.3f, %.3f )" % ( ALPHABET[i], p[0], p[1] )
+				except : pass
+
+############################################################
+# Original plotter code. 	                               #
+############################################################
+
+class SinglePlotter( Widget ) :
 
 	#Points to be drawn
 	points = ListProperty( [] )

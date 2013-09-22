@@ -19,7 +19,7 @@ class KiPyCalc( BoxLayout ) :
 		self.add_widget( self.shell ) 
 		self.plotter = None
 		self.mode = "calc"
-		self.plottingOptionPanel = PlottingOptionPanel( self.onPlotConfirm )	  
+		#self.plottingOptionPanel = PlottingOptionPanel( self.onPlotConfirm )	  
 		self._fooToPlot = None
 
 	def start( self ) : 
@@ -27,14 +27,17 @@ class KiPyCalc( BoxLayout ) :
 
 	def onPlotRequest( self, instance ) : 
 		self.mode = "plot"
+		"""
 		try :
 			self.plottingOptionPanel.open( self.shell.kb.current.text, self.shell, self.plotter.getConfig() )  
 		except AttributeError : 
 			self.plottingOptionPanel.open( self.shell.kb.current.text, self.shell )  
 
 	def onPlotConfirm( self, instance ) :
-		options, foo = self.plottingOptionPanel.dismiss()
-		self.plotter = Plotter( foo, **options ) 
+		options, functions = self.plottingOptionPanel.dismiss()
+		"""
+		#self.plotter = Plotter( functions, **options ) 
+		self.plotter = Plotter( [ 0, 1, 2, 3 ] )
 		self.clear_widgets()
 		self.add_widget( self.plotter )
 
