@@ -8,6 +8,9 @@ from shell import *
 from plotter import *
 from kivyextras import *
 
+from sympy import *
+from sympy.abc import *
+
 FONT_NAME = "res/ubuntu-font-family-0.80/UbuntuMono-R.ttf"
 FONT_SIZE = 16
 
@@ -19,34 +22,39 @@ class KiPyCalc( BoxLayout ) :
 		self.add_widget( self.shell ) 
 		self.plotter = None
 		self.mode = "calc"
-		#self.plottingOptionPanel = PlottingOptionPanel( self.onPlotConfirm )	  
+		self.plottingPanel = PlottingPanel( self.onPlotConfirm )	  
 		self._fooToPlot = None
 
 	def start( self ) : 
 		self.shell.start()
 
 	def onPlotRequest( self, instance ) : 
-		self.mode = "plot"
-		"""
-		try :
-			self.plottingOptionPanel.open( self.shell.kb.current.text, self.shell, self.plotter.getConfig() )  
-		except AttributeError : 
-			self.plottingOptionPanel.open( self.shell.kb.current.text, self.shell )  
+		self.plottingPanel.open( self.shell )
 
 	def onPlotConfirm( self, instance ) :
-		options, functions = self.plottingOptionPanel.dismiss()
-		"""
-		#self.plotter = Plotter( functions, **options ) 
-		self.plotter = Plotter( [ 0, 1, 2, 3 ] )
+		self.mode = "plot"
+		foos = self.plottingPanel.dismiss()
+		self.plotter = self.getPlotter( foos )
 		self.clear_widgets()
 		self.add_widget( self.plotter )
 
+	def getPlotter( self, foos ) :
+		n = 5
+		foos = map( lambda f,i:f-i*x/n, [x**3]*n, range(0,n) )
+		foos = x**3 - 3*x
+		try : 
+			if len( foos ) == 1 :
+				return SinglePlotter( foos )
+			return Plotter( foos )
+		except TypeError :
+			return SinglePlotter( foos )
+
 	def onReturnKey( self ) :
+		self.plottingPanel.dismiss( True )
 		if self.mode == "plot" :
 			self.mode = "calc"
 			self.clear_widgets()
 			self.add_widget( self.shell )
-			self.plottingOptionPanel.dismiss( True )
 			return True
 
 	def onMenuKey( self ) :

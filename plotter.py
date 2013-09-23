@@ -22,6 +22,7 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
 from time import time
 from math import sqrt, floor
+from random import random
 from string import join
 from sympy import *
 from sympy.abc import *
@@ -64,9 +65,9 @@ class SpecialPoint( Widget ) :
 class DrawableFunction( Widget ) :
 
 	foo = ObjectProperty( None )
+	color = ListProperty( [1,1,1,1] )
 	points = ListProperty( [] )
 	sPoints = ListProperty( [] )
-	step = NumericProperty( 0 )
 	
 	def __init__( self, **kargs ) :
 		super( DrawableFunction, self ).__init__( **kargs )
@@ -92,7 +93,7 @@ class DrawableFunction( Widget ) :
 		for p in spoints :
 			if spoints.count( p ) != 1 : spoints.remove( p )
 
-	def eval( self, xMin, xMax, yMin, yMax, ppx, ppy ) :
+	def eval( self, xMin, xMax, yMin, yMax, ppx, ppy, step ) :
 		points = []
 		x = xMin
 		while x < xMax : 
@@ -102,7 +103,7 @@ class DrawableFunction( Widget ) :
 					points.append( ( x - xMin ) * ppx )
 					points.append( ( y - yMin ) * ppy )
 			except : pass
-			x += self.step
+			x += step
 		self.points = points
 
 		for point in self.sPoints : 			
@@ -130,32 +131,61 @@ class Plotter( Widget ) :
 	touching = BooleanProperty( False )
 
 	def __init__( self, functions, **kargs ) : 
-		Widget.__init__( self, **kargs )
+		super( Plotter, self ).__init__( **kargs )
 		self.width, self.height = screen_size()
 		self.lblPoints = Label( font_name = FONT_NAME, 
                                 font_size = FONT_SIZE )
 		self.add_widget( self.lblPoints )
-		self.setup( functions )
+		self.loadFunctions( functions )
+		self.setup()
 		self.fooStudy()
 		self.evalPoints()  
 		self.prepareCanvas()
 
+	def loadFunctions( self, functions ) :
+		for foo in functions :
+			self.functions.append( 
+				DrawableFunction( foo = lambdify( x, foo ), \
+								  color = [ random(), random(), random(), 1 ]
+				) 
+			)
+	 
 	def prepareCanvas( self ) :
 		for foo in self.functions :
 			with self.canvas :
-				Line( points=foo.points, width=1, group="functions" )
+				kg.Color( foo.color[0], foo.color[1], foo.color[2], foo.color[3],
+                          group="functions" )
+				kg.Line( points=foo.points, width=2, group="functions" )
+				kg.Color( 1, 1, 1, 1, group="axis" )
+				kg.Line( points=self.getXAxis(), width=1, group="axis" )
+				kg.Line( points=self.getYAxis(), width=1, group="axis" )
 					
+	def getXAxis( self ) :
+		px = ( -self.xRange[0] ) * self.ppx
+		p1y = ( self.yRange[1] - self.yRange[0] ) * self.ppy
+		p2y = ( self.yRange[0] ) * self.ppy
+		return [ px, p1y, px, p2y ]
+					
+	def getYAxis( self ) :
+		py = ( -self.yRange[0] ) * self.ppy
+		p1x = ( self.xRange[1] - self.xRange[0] ) * self.ppx
+		p2x = ( self.xRange[0] ) * self.ppx
+		return [ p1x, py, p2x, py ]
+
 	def restoreCanvas( self ) :
 		self.canvas.remove_group( "functions" )
+		self.canvas.remove_group( "axis" )
 		#self.canvas.remove_group( "sPoints" )
 
 	def evalPoints( self ) :
 		for foo in self.functions :
-			foo.eval( self.xRange[0], self.xRange[1], 
+			foo.eval( self.xRange[0], self.xRange[1]*2, 
                       self.yRange[0], self.yRange[1],
-                      self.ppx, self.ppy )
+                      self.ppx, self.ppy, self.step )
+		self.restoreCanvas()
+		self.prepareCanvas()
 
-	def setup( self, functions ) : 
+	def setup( self ) : 
 		xToDisplay = abs( float( self.xRange[1]-self.xRange[0] ) )
 		yToDisplay = abs( float( self.yRange[1]-self.yRange[0] ) )
 		self.ppx = self.width / xToDisplay
@@ -164,13 +194,6 @@ class Plotter( Widget ) :
 		self.x_scale_indicators_step = 1 + int( xToDisplay / 10 )
 		self.y_scale_indicators_step = 1 + int( yToDisplay / 10 )
 
-		for foo in functions :
-			self.functions.append( 
-				DrawableFunction( foo = lambdify( x, foo ), \
-								  step = 1	
-				) 
-			)
-	 
 	def movePlot( self ) :
 		dx = ( self.touches[0].px - self.touches[0].x )/( self.ppx )
 		dy = ( self.touches[0].py - self.touches[0].y )/( self.ppy )
@@ -183,8 +206,10 @@ class Plotter( Widget ) :
 		dx  = abs( self.touches[0].sx  - self.touches[1].sx  )
 		dpy = abs( self.touches[0].psy - self.touches[1].psy )
 		dy  = abs( self.touches[0].sy  - self.touches[1].sy  )
-		if dx > self.pinchS : self.xRange = [ xl*dpx/dx for xl in self.xRange ]
-		if dy > self.pinchS : self.yRange = [ yl*dpy/dy for yl in self.yRange ]
+		if dx > self.pinchS : 
+			self.xRange = [ xl*dpx/dx for xl in self.xRange ]
+		if dy > self.pinchS : 
+			self.yRange = [ yl*dpy/dy for yl in self.yRange ]
 		self.setup()
 		self.evalPoints()
 	
@@ -197,7 +222,6 @@ class Plotter( Widget ) :
 			if t.uid == touch.uid:
 				self.touches.remove( t )
 		self.touching = False
-		self.setIndicators()		
 
 	def on_touch_move( self, touch ) :
 		#check if the touch is sigle or multiple
@@ -217,7 +241,10 @@ class Plotter( Widget ) :
 			foo.study()			
 			for i, p in enumerate( foo.sPoints ) :
 				try :
-					sp = SpecialPoint( font_size=FONT_SIZE-1, point=p, size=self.size, label=ALPHABET[i])
+					sp = SpecialPoint( font_size=FONT_SIZE-1, \
+                                       point=p, \
+									   size=self.size, \
+                                       label=ALPHABET[i] )
 					self.add_widget( sp )		
 					self.lblPoints.text += "\n%s : ( %.3f, %.3f )" % ( ALPHABET[i], p[0], p[1] )
 				except : pass
@@ -252,7 +279,7 @@ class SinglePlotter( Widget ) :
 	touching = BooleanProperty( False )
 
 	def __init__( self, foo, **kargs ) : 
-		Widget.__init__( self, **kargs )
+		super( SinglePlotter, self ).__init__( **kargs )
 		self.width, self.height = screen_size()
 		self.expr = foo
 		self.foo = lambdify( x, foo )		
@@ -299,16 +326,25 @@ class SinglePlotter( Widget ) :
 		#Adding new indicators
 		while x <= self.xRange[1] :
 			if not self.xNearSpecialPoint( x ) :
-				p = SpecialPoint( pcolor=(1,1,1,1), lcolor=(0,0,0,0), point=( x, 0 ), label=str(x) )
-				p.scale( self.xRange[0], self.yRange[0], self.ppx, self.ppy )
+				p = SpecialPoint( pcolor = ( 1, 1, 1, 1 ), \
+                                  lcolor = ( 0, 0, 0, 0 ), \
+                                  point = ( x, 0 ), \
+                                  label = str( x ) )
+				p.scale( self.xRange[0], self.yRange[0], \
+                         self.ppx, self.ppy )
 				self.add_widget( p )
 				self.indicators.append( p )
 			x += self.x_scale_indicators_step
+
 		h = self.height - self.lblPoints.pos[1]
 		while y <= self.yRange[1]-h/self.ppy :
 			if not self.yNearSpecialPoint( y ) :
-				p = SpecialPoint( pcolor=(1,1,1,1), lcolor=(0,0,0,0), point=( 0, y ), label=str(y) )
-				p.scale( self.xRange[0], self.yRange[0], self.ppx, self.ppy )
+				p = SpecialPoint( pcolor = ( 1, 1, 1, 1 ), \
+                                  lcolor = ( 0, 0, 0, 0 ), \
+                                  point = ( 0, y ), \
+                                  label = str( y ) )
+				p.scale( self.xRange[0], self.yRange[0], \
+                         self.ppx, self.ppy )
 				self.add_widget( p )
 				self.indicators.append( p )
 			y += self.y_scale_indicators_step
@@ -395,131 +431,36 @@ class SinglePlotter( Widget ) :
 				self.lblPoints.text += "\n%s : ( %.3f, %.3f )" % ( ALPHABET[i], p[0], p[1] )
 			except : pass
 
-class PlottingOptionPanel( Popup ) :
+
+class PlottingPanel( Popup ) :
 	
+	expLabel = ObjectProperty( None )
+
 	def __init__( self, onConfirm ) :
 		Popup.__init__( self, \
 						title = 'Plotting Options', \
 						content = self._generateContent( onConfirm ), \
 						size_hint = ( 0.95,0.95 ) )
-
 		setFont( self.content, FONT_NAME, FONT_SIZE )
-		self.expLabel.font_size = FONT_SIZE+5
 
-	def _generateContent( self, onConfirm ) :
-		w, h = screen_size()
-		cont = BoxLayout( orientation="vertical" )
-		cont.spacing = 30
-
-		colorChoosingZone = self._generateColorChoosingZone()
-		areaChoosingZone = self._generateAreaChoosingZone()
-
-		cont.add_widget( self._generateExpLabel() )
-		cont.add_widget( colorChoosingZone )
-		cont.add_widget( areaChoosingZone )
-		cont.add_widget( self._generateConfirmButton( onConfirm ) )
+	def _generateContent( self, onConfirm ) : 
+		c = BoxLayout( orientation = "vertical" )
+		btnPlot = Button( text="Ok, plot" )
+		btnPlot.bind( on_press = onConfirm )
+		self.expLabel = Label( text="" )
+		c.add_widget( self.expLabel )
+		c.add_widget( btnPlot )
+		return c
 		
-		return cont
-
-	def _generateExpLabel( self ) : 
-		self.expLabel = Label()
-		self.expLabel.size_hint = 1, 0.2
-		return self.expLabel
-
-	def _generateConfirmButton( self, onConfirm ) :
-		btnConfirm = Button( text="Ok, Plot!" )
-		btnConfirm.bind( on_press=onConfirm )
-		btnConfirm.size_hint = 1, 0.3
-		return btnConfirm
-
-	def _generateAreaChoosingZone( self ) :
-		xRange = BoxLayout( orientation="vertical" )
-		xRange.add_widget( Label( text="X range :" ) )
-		self.xRangeMin = NumericUpDown( value=-1, vstep=0.1 )
-		self.xRangeMax = NumericUpDown( value=1, vstep=0.1 )
-		xRange.add_widget( self.xRangeMin )
-		xRange.add_widget( self.xRangeMax )
-
-		yRange = BoxLayout( orientation="vertical" )
-		yRange.add_widget( Label( text="Y range :" ) )
-		self.yRangeMin = NumericUpDown( value=-1, vstep=0.1 )
-		self.yRangeMax = NumericUpDown( value=1, vstep=0.1 )
-		yRange.add_widget( self.yRangeMin )
-		yRange.add_widget( self.yRangeMax )
-
-		areaChoosingZone = BoxLayout( orientation="horizontal" )
-		areaChoosingZone.spacing = 30
-		areaChoosingZone.add_widget( xRange )
-		areaChoosingZone.add_widget( yRange ) 
-
-		return areaChoosingZone
-
-	def _generateColorChoosingZone( self ) :		
-		self.axisColorChooser = ColorChooser( rgb = [ 1, 1, 1 ], \
-                                              label = "Axis color :", \
-                                              size_hint = ( 0.8, 0.4 ), \
-                                              onDone = self.updateAxisColor )
-		self.btnAxisColor = ColoredButton( rgb=[1,1,1] )
-		self.btnAxisColor.bind( on_press=self.axisColorChooser.open )
-		axisColorZone = BoxLayout()
-		axisColorZone.add_widget( Label( text="Axis color : " ) )
-		axisColorZone.add_widget( self.btnAxisColor )
-
-		self.plotColorChooser = ColorChooser( rgb = [ 0, 1, 0 ], \
-                                              label = "Plot color :", \
-                                              size_hint = ( 0.8, 0.4 ), \
-                                              onDone = self.updatePlotColor )
-		self.btnPlotColor = ColoredButton( rgb=[0,1,0] )
-		self.btnPlotColor.bind( on_press=self.plotColorChooser.open )
-		plotColorZone = BoxLayout()
-		plotColorZone.add_widget( Label( text="Plot color : " ) )
-		plotColorZone.add_widget( self.btnPlotColor )
-		
-		colorChoosingZone = BoxLayout( orientation="vertical" )
-		colorChoosingZone.add_widget( axisColorZone )
-		colorChoosingZone.add_widget( plotColorZone )
-
-		return colorChoosingZone
-
-	def updateAxisColor( self, instance ) :
-		self.btnAxisColor.color = instance.rgb()
-
-	def updatePlotColor( self, instance ) :
-		self.btnPlotColor.color = instance.rgb()
-
-	def open( self, someExpression, shellObj, currentConfig=None ) : 
-		if not currentConfig is None :
-			self.plotColorChooser.setRGB( currentConfig[ "plotColor" ] )
-			self.axisColorChooser.setRGB( currentConfig[ "axisColor" ] )
-			self.btnPlotColor.color = currentConfig[ "plotColor" ]
-			self.btnAxisColor.color = currentConfig[ "axisColor" ]
-			self.xRangeMin.value = float( "%.3f" % currentConfig[ "xRange" ][0] )
-			self.xRangeMax.value = float( "%.3f" % currentConfig[ "xRange" ][1] )
-			self.yRangeMin.value = float( "%.3f" % currentConfig[ "yRange" ][0] )
-			self.yRangeMax.value = float( "%.3f" % currentConfig[ "yRange" ][1] )
-
-		shellObj._lastOutput = []
-		shellObj.console.push( "evalf(" + someExpression + ")" )
-
-		if not DEBUG : 
-			self.expLabel.text = shellObj._lastOutput[-1]
-			fullMsg = join( shellObj._lastOutput, "\n" )
-			if not "Error" in fullMsg :
-				self.expLabel.text = shellObj._lastOutput[-2]
-				Popup.open( self )
-		else : 
-			#TODO, Find a best way for debug
-			self.expLabel.text = "x**2 - 4*x" #Some expression
+	def open( self, shellObj, currentConfig=None ) : 
+		self.expLabel.text = shellObj._lastOutput[-1]
+		fullMsg = join( shellObj._lastOutput, "\n" )
+		if not "Error" in fullMsg :
+			self.expLabel.text = shellObj._lastOutput[-2]
 			Popup.open( self )
 
-	def dismiss( self, forced=False ) :
-		if self.axisColorChooser.isShown : self.axisColorChooser.dismiss()
-		elif self.plotColorChooser.isShown : self.plotColorChooser.dismiss()
-		else :
-			Popup.dismiss( self )
-			if forced : return
-			config = { "axisColor" : self.axisColorChooser.rgb(), \
-					   "plotColor" : self.plotColorChooser.rgb(), \
-	   				   "xRange"	: (self.xRangeMin.value, self.xRangeMax.value), \
-					   "yRange"    : (self.yRangeMin.value, self.yRangeMax.value) }
-			return config, eval( self.expLabel.text )
+
+
+
+
+
