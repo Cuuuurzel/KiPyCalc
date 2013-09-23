@@ -1,0 +1,57 @@
+# Hello user!
+# This is the script that KiPyCalc calls to initialize the shell.
+# As you can see, this is a simply python script, feel free to modify it all if you want.
+# ( I hope you won't touch anything if you don't know what python is. )
+# 
+# Here is the source code of the application -> https://github.com/Cuuuurzel/KiPyCalc
+# ( if you want to restore this file, just search for it there. )
+# Any suggestion is welcome -> fcurzel94@gmail.com 
+
+#FILE CONTENT : 
+
+from math import *
+#Sympy is a full CAS, written in pure python.
+#Check this out : http://sympy.org/en/index.html
+from sympy import *
+from sympy.abc import *
+
+#Let's say you have to make a division ( 5/2 )...
+#If both the member of the operation are intergers, 
+#python, by default returns an integer ( so, 2 instead of 2.5 )
+#This import forces python to return a float result ( 2.5 )
+from __future__ import division
+
+#The last result
+ans = 0
+#The previous result
+last_ANS = 0
+
+print( "#Type 'ans' to refer to the last result." )
+print( "#Keep in mind that numeric values differs a lot from symbolic one." )
+print( "#Need more? Check out the 'SHELL_INIT' file in your SD card!" )
+
+def evalf( *largs ) :
+	if len( largs ) == 0 : return evalf_NonList( ans )
+	elif len( largs ) == 1 : something = largs[0]
+	else : something = largs
+
+	try : 
+		if len( something ) == 1 :
+			return evalf_NonList( something )
+		else :
+			return map( evalf, something )
+	except TypeError :
+		return evalf_NonList( something )
+
+def evalf_NonList( something=None ) : 
+	if something is None : return evalf_NonList( ans )
+	try : 
+		return something.evalf()
+	except AttributeError :
+		try :
+			return float( something )
+		except ValueError : 
+			print( "Error : Unvalid Expression!" ) 
+
+
+#USER-DEFINED FUNCTIONS AND CLASSES :

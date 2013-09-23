@@ -45,7 +45,7 @@ class PyShell( BoxLayout ) :
 		self.shellInit()
 
 	def shellInit( self ) :
-		initCode = open( "res/SHELL_INIT" ).read()
+		initCode = open( "res/SHELL_INIT_PRO" ).read()
 		for line in initCode.split("\n") :
 			self.console.push( line )
 
@@ -60,14 +60,18 @@ class PyShell( BoxLayout ) :
 		if stat.upper() in ( "ANS\n", "ANS" ) :
 			return "print( ans )", False
 		
-		keys = map( lambda word : word.upper(), keyword.kwlist ) #keyword.kwlist
+		keys = map( lambda word : word.upper(), keyword.kwlist )
+
 		for key in keys : 
 			if key in stat.upper() : 
 				return stat, False
 		return "ans = " + stat, True			
 
+	def getInput( self ) :
+		return self.kb.current.text
+ 
 	def onBtnExecPress( self, instance ) :
-		stat = self.kb.current.text + "\n"
+		stat = self.getInput() + "\n"
 		stat, printANS = self.correctInput( stat )
 
 		#Save current ANS.

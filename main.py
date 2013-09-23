@@ -23,7 +23,6 @@ class KiPyCalc( BoxLayout ) :
 		self.plotter = None
 		self.mode = "calc"
 		self.plottingPanel = PlottingPanel( self.onPlotConfirm )	  
-		self._fooToPlot = None
 
 	def start( self ) : 
 		self.shell.start()
@@ -39,9 +38,6 @@ class KiPyCalc( BoxLayout ) :
 		self.add_widget( self.plotter )
 
 	def getPlotter( self, foos ) :
-		n = 5
-		foos = map( lambda f,i:f-i*x/n, [x**3]*n, range(0,n) )
-		foos = x**3 - 3*x
 		try : 
 			if len( foos ) == 1 :
 				return SinglePlotter( foos )
@@ -50,7 +46,7 @@ class KiPyCalc( BoxLayout ) :
 			return SinglePlotter( foos )
 
 	def onReturnKey( self ) :
-		self.plottingPanel.dismiss( True )
+		self.plottingPanel.dismiss(	)
 		if self.mode == "plot" :
 			self.mode = "calc"
 			self.clear_widgets()

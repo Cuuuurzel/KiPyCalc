@@ -108,7 +108,11 @@ class DrawableFunction( Widget ) :
 
 		for point in self.sPoints : 			
 			point.scale( xMin, yMin, ppx, ppy )
-		
+	
+############################################################
+# Multi plotter code. 	                                   #
+############################################################
+	
 class Plotter( Widget ) :
 
 	functions = ListProperty( [] )
@@ -143,19 +147,19 @@ class Plotter( Widget ) :
 		self.prepareCanvas()
 
 	def loadFunctions( self, functions ) :
-		for foo in functions :
-			self.functions.append( 
-				DrawableFunction( foo = lambdify( x, foo ), \
-								  color = [ random(), random(), random(), 1 ]
-				) 
-			)
+		for foo in eval( functions ) :			
+			dfoo = DrawableFunction( 
+				foo = lambdify( x, evalf( foo ) ), \
+				color = [ random(), random(), random(), 1 ]
+			) 						
+			self.functions.append( dfoo )
 	 
 	def prepareCanvas( self ) :
-		for foo in self.functions :
+		for f in self.functions :
 			with self.canvas :
-				kg.Color( foo.color[0], foo.color[1], foo.color[2], foo.color[3],
+				kg.Color( f.color[0],f.color[1],f.color[2],f.color[3],
                           group="functions" )
-				kg.Line( points=foo.points, width=2, group="functions" )
+				kg.Line( points=f.points, width=2, group="functions" )
 				kg.Color( 1, 1, 1, 1, group="axis" )
 				kg.Line( points=self.getXAxis(), width=1, group="axis" )
 				kg.Line( points=self.getYAxis(), width=1, group="axis" )
@@ -439,11 +443,11 @@ class PlottingPanel( Popup ) :
 	def __init__( self, onConfirm ) :
 		Popup.__init__( self, \
 						title = 'Plotting Options', \
-						content = self._generateContent( onConfirm ), \
+						content = self._genContent( onConfirm ), \
 						size_hint = ( 0.95,0.95 ) )
 		setFont( self.content, FONT_NAME, FONT_SIZE )
 
-	def _generateContent( self, onConfirm ) : 
+	def _genContent( self, onConfirm ) : 
 		c = BoxLayout( orientation = "vertical" )
 		btnPlot = Button( text="Ok, plot" )
 		btnPlot.bind( on_press = onConfirm )
@@ -453,12 +457,17 @@ class PlottingPanel( Popup ) :
 		return c
 		
 	def open( self, shellObj, currentConfig=None ) : 
+		shellObj._lastOutput = []
+		shellObj.console.push( "evalf(" + shellObj.getInput() + ")" )
 		self.expLabel.text = shellObj._lastOutput[-1]
 		fullMsg = join( shellObj._lastOutput, "\n" )
 		if not "Error" in fullMsg :
 			self.expLabel.text = shellObj._lastOutput[-2]
 			Popup.open( self )
-
+		
+	def dismiss( self ) :
+		Popup.dismiss( self )
+		return self.expLabel.text
 
 
 
