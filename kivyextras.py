@@ -27,13 +27,6 @@ class ColoredButton( Button ) :
 
 	def __init__( self, **kargs ) :
 		super( ColoredButton, self ).__init__( **kargs )
-		self.color = self._getDefaultColor( kargs )
-
-	def _getDefaultColor( self, kargs ) :
-		try :
-			return kargs[ 'rgb' ]
-		except KeyError : 
-			return 0,0,0
 
 class ColorChooser( Popup ) :
  

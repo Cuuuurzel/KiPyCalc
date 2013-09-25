@@ -6,7 +6,6 @@ from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
-from kivy.uix.scrollview import ScrollView
 from sympy import *
 from sympy.abc import *
 from sympy.utilities.lambdify import lambdify
