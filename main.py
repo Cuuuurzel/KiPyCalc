@@ -21,6 +21,7 @@ class KiPyCalc( BoxLayout ) :
 		self.shell = PyShell( self.onPlotRequest )
 		self.add_widget( self.shell ) 
 		self.plotter = None
+		self.plotterConfig = None
 		self.mode = "calc"
 		self.plottingPanel = PlottingPanel( self.onPlotConfirm )	  
 
@@ -28,11 +29,13 @@ class KiPyCalc( BoxLayout ) :
 		self.shell.start()
 
 	def onPlotRequest( self, instance ) : 
+		self.plottingPanel.setConfig( self.plotterConfig )
 		self.plottingPanel.open( self.shell )
 
 	def onPlotConfirm( self, instance ) :
 		self.mode = "plot"
 		foos = self.plottingPanel.dismiss()
+		self.plotterConfig = self.plottingPanel.getConfig()
 		self.plotter = self.getPlotter( foos )
 		self.clear_widgets()
 		self.add_widget( self.plotter )
@@ -40,21 +43,26 @@ class KiPyCalc( BoxLayout ) :
 	def getPlotter( self, foos ) :
 		try : 
 			if len( foos ) == 1 :
-				return SinglePlotter( foos )
-			return Plotter( foos )
+				return SinglePlotter( foos, **self.plotterConfig )
+			return Plotter( foos, **self.plotterConfig )
 		except TypeError :
-			return SinglePlotter( foos )
+			return SinglePlotter( foos, **self.plotterConfig )
 
 	def onReturnKey( self ) :
-		self.plottingPanel.dismiss(	)
-		if self.mode == "plot" :
-			self.mode = "calc"
-			self.clear_widgets()
-			self.add_widget( self.shell )
+		res = self.plottingPanel.dismiss()		
+		if res != None :
+			if self.mode == "plot" :
+				self.mode = "calc"
+				self.clear_widgets()
+				self.add_widget( self.shell )
+				return True
+		else : 
 			return True
 
 	def onMenuKey( self ) :
 		if self.mode == "plot" :
+			self.plotterConfig["xRange"] = self.plotter.xRange
+			self.plotterConfig["yRange"] = self.plotter.yRange
 			self.onPlotRequest( None )
 			return True
 		else : 

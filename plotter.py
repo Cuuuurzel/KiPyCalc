@@ -128,7 +128,8 @@ class Plotter( Widget ) :
 	indicators = ListProperty( [] )
 	#Other things
 	pinchS = NumericProperty( 0.1 )
-	plotColor = ListProperty( [0,1,0] )
+	plotColor1 = ListProperty( [0,1,0] )
+	plotColor2 = ListProperty( [1,0,0] )
 	axisColor = ListProperty( [1,1,1] )
 	#List to handle touches
 	touches = ListProperty( [] )
@@ -140,26 +141,46 @@ class Plotter( Widget ) :
 		self.lblPoints = Label( font_name = FONT_NAME, 
                                 font_size = FONT_SIZE )
 		self.add_widget( self.lblPoints )
+		self.setConfig( kargs )
 		self.loadFunctions( functions )
 		self.setup()
 		self.fooStudy()
 		self.evalPoints()  
 		self.prepareCanvas()
+		
+	def setColors( self ) :
+		n = float( len( self.functions ) )
+		dc = map( lambda f,s:(s-f)/n, self.plotColor1, self.plotColor2 )
+		color = self.plotColor1
+		for f in self.functions :
+			color = map( lambda a,b:a+b, color, dc )
+			f.color = color + [1]
+		
+	def setConfig( self, config ) :
+		self.xRange = config[ "xRange" ]
+		self.yRange = config[ "yRange" ]
+		self.plotColor1 = config[ "plotColor1" ]
+		self.plotColor2 = config[ "plotColor2" ]
+		self.axisColor = config[ "axisColor" ]		
 
 	def loadFunctions( self, functions ) :
-		for foo in eval( functions ) :			
-			dfoo = DrawableFunction( 
-				foo = lambdify( x, evalf( foo ) ), \
-				color = [ random(), random(), random(), 1 ]
-			) 						
+		self.functions = []
+		for f in functions :
+			try :
+				dfoo = DrawableFunction( 
+					foo = lambdify( x, f ), \
+					color = [ random(), random(), random(), 1 ]
+				)
+			except Exception as e : print( e ) 			
 			self.functions.append( dfoo )
 	 
 	def prepareCanvas( self ) :
+		self.setColors()
 		for f in self.functions :
 			with self.canvas :
 				kg.Color( f.color[0],f.color[1],f.color[2],f.color[3],
                           group="functions" )
-				kg.Line( points=f.points, width=2, group="functions" )
+				kg.Line( points=f.points, width=1, group="functions" )
 				kg.Color( 1, 1, 1, 1, group="axis" )
 				kg.Line( points=self.getXAxis(), width=1, group="axis" )
 				kg.Line( points=self.getYAxis(), width=1, group="axis" )
@@ -401,7 +422,8 @@ class SinglePlotter( Widget ) :
 			self.pinchZoom() 
 
 	def getConfig( self ) :
-		return { "plotColor" : self.plotColor, \
+		return { "plotColor1" : self.plotColor1, \
+				 "plotColor2" : self.plotColor2, \
                  "axisColor" : self.axisColor, \
                  "xRange" : self.xRange, \
                  "yRange" : self.yRange }
@@ -435,41 +457,167 @@ class SinglePlotter( Widget ) :
 				self.lblPoints.text += "\n%s : ( %.3f, %.3f )" % ( ALPHABET[i], p[0], p[1] )
 			except : pass
 
+############################################################
+# Plotting panel.                                          #
+############################################################
 
 class PlottingPanel( Popup ) :
 	
-	expLabel = ObjectProperty( None )
-
 	def __init__( self, onConfirm ) :
 		Popup.__init__( self, \
 						title = 'Plotting Options', \
-						content = self._genContent( onConfirm ), \
+						content = self._generateContent( onConfirm ), \
 						size_hint = ( 0.95,0.95 ) )
+
 		setFont( self.content, FONT_NAME, FONT_SIZE )
 
-	def _genContent( self, onConfirm ) : 
-		c = BoxLayout( orientation = "vertical" )
-		btnPlot = Button( text="Ok, plot" )
-		btnPlot.bind( on_press = onConfirm )
-		self.expLabel = Label( text="" )
-		c.add_widget( self.expLabel )
-		c.add_widget( btnPlot )
-		return c
+	def _generateContent( self, onConfirm ) :
+		w, h = screen_size()
+		cont = BoxLayout( orientation="vertical" )
+		cont.spacing = 30
+
+		colorChoosingZone = self._generateColorChoosingZone()
+		areaChoosingZone = self._generateAreaChoosingZone()
+
+		cont.add_widget( self._generateExpLabel() )
+		cont.add_widget( colorChoosingZone )
+		cont.add_widget( areaChoosingZone )
+		cont.add_widget( self._generateConfirmButton( onConfirm ) )
 		
+		return cont
+
+	def _generateExpLabel( self ) : 
+		self.expLabel = Label()
+		self.expLabel.size_hint = 1, 0.2
+		return self.expLabel
+
+	def _generateConfirmButton( self, onConfirm ) :
+		btnConfirm = Button( text="Ok, Plot!" )
+		btnConfirm.bind( on_press=onConfirm )
+		btnConfirm.size_hint = 1, 0.3
+		return btnConfirm
+
+	def _generateAreaChoosingZone( self ) :
+		xRange = BoxLayout( orientation="vertical" )
+		xRange.add_widget( Label( text="X range :" ) )
+		self.xRangeMin = NumericUpDown( value=-1, vstep=0.1 )
+		self.xRangeMax = NumericUpDown( value=1, vstep=0.1 )
+		xRange.add_widget( self.xRangeMin )
+		xRange.add_widget( self.xRangeMax )
+
+		yRange = BoxLayout( orientation="vertical" )
+		yRange.add_widget( Label( text="Y range :" ) )
+		self.yRangeMin = NumericUpDown( value=-1, vstep=0.1 )
+		self.yRangeMax = NumericUpDown( value=1, vstep=0.1 )
+		yRange.add_widget( self.yRangeMin )
+		yRange.add_widget( self.yRangeMax )
+
+		areaChoosingZone = BoxLayout( orientation="horizontal" )
+		areaChoosingZone.spacing = 30
+		areaChoosingZone.add_widget( xRange )
+		areaChoosingZone.add_widget( yRange ) 
+
+		return areaChoosingZone
+
+	def _generateColorChoosingZone( self ) :		
+		#Axis color
+		self.axisColorChooser = ColorChooser( rgb = [ 1, 1, 1 ], \
+                                              label = "Axis color :", \
+                                              size_hint = ( 0.8, 0.4 ), \
+                                              onDone = self.updateAxisColor )
+		self.btnAxisColor = ColoredButton( rgb=[1,1,1] )
+		self.btnAxisColor.bind( on_press=self.axisColorChooser.open )
+		axisColorZone = BoxLayout()
+		axisColorZone.add_widget( Label( text="Axis color : " ) )
+		axisColorZone.add_widget( self.btnAxisColor )
+
+		#First plot color
+		self.plotColorChooser1 = ColorChooser( rgb = [ 0, 1, 0 ], \
+                                               label = "First plot color :", \
+                                               size_hint = ( 0.8, 0.4 ), \
+                                               onDone = self.updatePlotColor1 )
+		self.btnPlotColor1 = ColoredButton( rgb=[0,1,0] )
+		self.btnPlotColor1.bind( on_press=self.plotColorChooser1.open )
+		plotColor1Zone = BoxLayout()
+		plotColor1Zone.add_widget( Label( text="1st plot color : " ) )
+		plotColor1Zone.add_widget( self.btnPlotColor1 )
+
+		#Second plot color
+		self.plotColorChooser2 = ColorChooser( rgb = [ 1, 0, 0 ], \
+                                               label = "Second plot color :", \
+                                               size_hint = ( 0.8, 0.4 ), \
+                                               onDone = self.updatePlotColor2 )
+		self.btnPlotColor2 = ColoredButton( rgb=[1,0,0] )
+		self.btnPlotColor2.bind( on_press=self.plotColorChooser2.open )
+		plotColor2Zone = BoxLayout()
+		plotColor2Zone.add_widget( Label( text="2nd plot color : \n(Used to create shades)" ) )
+		plotColor2Zone.add_widget( self.btnPlotColor2 )
+		
+		#Packing
+		colorChoosingZone = BoxLayout( orientation="vertical" )
+		colorChoosingZone.add_widget( axisColorZone )
+		colorChoosingZone.add_widget( plotColor1Zone )
+		colorChoosingZone.add_widget( plotColor2Zone )
+
+		return colorChoosingZone
+
+	def updateAxisColor( self, instance ) :
+		self.btnAxisColor.color = instance.rgb()
+
+	def updatePlotColor1( self, instance ) :
+		self.btnPlotColor1.color = instance.rgb()
+
+	def updatePlotColor2( self, instance ) :
+		self.btnPlotColor2.color = instance.rgb()
+
 	def open( self, shellObj, currentConfig=None ) : 
 		shellObj._lastOutput = []
 		shellObj.console.push( "evalf(" + shellObj.getInput() + ")" )
-		self.expLabel.text = shellObj._lastOutput[-1]
-		fullMsg = join( shellObj._lastOutput, "\n" )
-		if not "Error" in fullMsg :
-			self.expLabel.text = shellObj._lastOutput[-2]
+
+		if not DEBUG :
+			self.expLabel.text = shellObj._lastOutput[-1]
+			fullMsg = join( shellObj._lastOutput, "\n" )
+			if not "Error" in fullMsg :
+				self.expLabel.text = shellObj._lastOutput[-2]
+				Popup.open( self )
+		else :
+			self.expLabel.text = "[ x, x**2, x**3, x**4 ]"
 			Popup.open( self )
-		
+
 	def dismiss( self ) :
-		Popup.dismiss( self )
-		return self.expLabel.text
+		if ( self.axisColorChooser.isShown or
+		     self.plotColorChooser1.isShown or 
+		     self.plotColorChooser2.isShown ) :
+			self.axisColorChooser.dismiss()
+			self.plotColorChooser1.dismiss() 
+			self.plotColorChooser2.dismiss()
+			return None
+		else :
+			Popup.dismiss( self )
+			if self.expLabel.text[0] in ( "[", "(" ) :
+				return map( eval, self.expLabel.text[1:-1].split( "," ) )
+			else :
+				return eval( self.expLabel.text )
 
+	def setConfig( self, config=None ) :
+		if not config is None :
+			self.plotColorChooser1.setRGB( config[ "plotColor1" ] )
+			self.plotColorChooser2.setRGB( config[ "plotColor2" ] )
+			self.axisColorChooser.setRGB( config[ "axisColor" ] )
+			self.btnPlotColor1.color = config[ "plotColor1" ]
+			self.btnPlotColor2.color = config[ "plotColor2" ]
+			self.btnAxisColor.color = config[ "axisColor" ]
+			self.xRangeMin.value = float( "%.3f" % config[ "xRange" ][0] )
+			self.xRangeMax.value = float( "%.3f" % config[ "xRange" ][1] )
+			self.yRangeMin.value = float( "%.3f" % config[ "yRange" ][0] )
+			self.yRangeMax.value = float( "%.3f" % config[ "yRange" ][1] )
 
-
-
-
+	def getConfig( self ) : 
+		config = { 
+			"axisColor" : self.axisColorChooser.rgb(), \
+			"plotColor1" : self.plotColorChooser1.rgb(), \
+			"plotColor2" : self.plotColorChooser2.rgb(), \
+	   		"xRange"	: (self.xRangeMin.value, self.xRangeMax.value), \
+			"yRange"    : (self.yRangeMin.value, self.yRangeMax.value) 
+		}
+		return config

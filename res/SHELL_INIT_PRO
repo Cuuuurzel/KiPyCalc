@@ -34,7 +34,6 @@ def evalf( *largs ) :
 	if len( largs ) == 0 : return evalf_NonList( ans )
 	elif len( largs ) == 1 : something = largs[0]
 	else : something = largs
-
 	try : 
 		if len( something ) == 1 :
 			return evalf_NonList( something )

@@ -23,6 +23,7 @@ def setFont( widget, fn, fs ) :
 class ColoredButton( Button ) :
 	
 	color = ListProperty( [0,0,0] )
+	m = ListProperty( [5,5] )
 
 	def __init__( self, **kargs ) :
 		super( ColoredButton, self ).__init__( **kargs )
