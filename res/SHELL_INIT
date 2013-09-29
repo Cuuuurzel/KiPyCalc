@@ -27,11 +27,26 @@ ans = 0
 last_ANS = 0
 
 print( "#Type 'ans' to refer to the last result." )
-print( "#Keep in mind that numeric values differs a lot from symbolic one." )
-print( "#Need more? Check out the 'SHELL_INIT' file in your SD card!" )
+print( "#Keep in mind that :" )
+print( "#    1. Numeric values differs a lot from symbolic one." )
+print( "#    2. Your using a Python interpreter!" )
+print( "#    3. Indent\\tab size is 4 space!" )
+print( "#Need more? Check the 'SHELL_INIT' file in your SD card!" )
 
-def evalf( something=None ) : 
-	if something is None : return evalf( ans )
+def evalf( *largs ) :
+	if len( largs ) == 0 : return evalf_NonList( ans )
+	elif len( largs ) == 1 : something = largs[0]
+	else : something = largs
+	try : 
+		if len( something ) == 1 :
+			return evalf_NonList( something )
+		else :
+			return map( evalf, something )
+	except TypeError :
+		return evalf_NonList( something )
+
+def evalf_NonList( something=None ) : 
+	if something is None : return evalf_NonList( ans )
 	try : 
 		return something.evalf()
 	except AttributeError :

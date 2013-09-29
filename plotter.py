@@ -217,8 +217,9 @@ class Plotter( Widget ) :
 				self.functions.append( dfoo )
 			except : 
 				if DEBUG : print( traceback.format_exc() ) 		
-				else : errors = True
-			if errors : print( "Given input contains errors..." )
+				else : 
+					print( "Given input contains errors..." )
+					break
 	 
 	def prepareCanvas( self ) :
 		self.setColors()
@@ -249,7 +250,7 @@ class Plotter( Widget ) :
 
 	def evalPoints( self ) :
 		for foo in self.functions :
-			foo.eval( self.xRange[0], self.xRange[1]*2, 
+			foo.eval( self.xRange[0], self.xRange[1], 
                       self.yRange[0], self.yRange[1],
                       self.ppx, self.ppy, self.step )
 		self.restoreCanvas()
@@ -267,10 +268,8 @@ class Plotter( Widget ) :
 		dx  = abs( self.touches[0].sx  - self.touches[1].sx  )
 		dpy = abs( self.touches[0].psy - self.touches[1].psy )
 		dy  = abs( self.touches[0].sy  - self.touches[1].sy  )
-		if dx > self.pinchS : 
-			self.xRange = [ xl*dpx/dx for xl in self.xRange ]
-		if dy > self.pinchS : 
-			self.yRange = [ yl*dpy/dy for yl in self.yRange ]
+		if dx > self.pinchS : self.xRange = [ xl*dpx/dx for xl in self.xRange ]
+		if dy > self.pinchS : self.yRange = [ yl*dpy/dy for yl in self.yRange ]
 		self.setup()
 		self.evalPoints()
 	
@@ -291,12 +290,15 @@ class Plotter( Widget ) :
 			self.movePlot()
 		elif len( self.touches ) == 2 :
 			self.pinchZoom() 
-
+	
 	def getConfig( self ) :
-		return { "plotColor" : self.plotColor, \
-                 "axisColor" : self.axisColor, \
-                 "xRange" : self.xRange, \
-                 "yRange" : self.yRange }
+		return {
+			"plotColor1" : self.plotColor1, \
+			"plotColor2" : self.plotColor2, \
+            "axisColor" : self.axisColor, \
+            "xRange" : self.xRange, \
+            "yRange" : self.yRange 
+		}
 
 ############################################################
 # Original plotter code. 	                               #
@@ -505,10 +507,13 @@ class PlottingPanel( Popup ) :
 		self.expLabel.font_size = FONT_SIZE + 5
 
 	def expLabelFix( self ) :
-		self.expLabel.size_hint = 1, 0.4
-		if self.expLabel.text_size > self.expLabel.size[0] :
-			n = self.expLabel.size[0] / FONT_SIZE
-			self.expLabel.text = self.expLabel.text[:-5] + "..."
+		width = self.expLabel.width = self.width
+		txtLen = len( self.expLabel.text )
+
+		if txtLen > width :
+			n = int( width / FONT_SIZE )
+			if n < txtLen :
+				self.expLabel.text = self.expLabel.text[:n-3] + "..."
 
 	def _generateContent( self, onConfirm ) :
 		w, h = screen_size()
@@ -518,16 +523,18 @@ class PlottingPanel( Popup ) :
 		colorChoosingZone = self._generateColorChoosingZone()
 		areaChoosingZone = self._generateAreaChoosingZone()
 
-		cont.add_widget( self._generateExpLabel() )
+		cont.add_widget( self._generateExpLabel( cont ) )
 		cont.add_widget( colorChoosingZone )
 		cont.add_widget( areaChoosingZone )
 		cont.add_widget( self._generateConfirmButton( onConfirm ) )
 		
 		return cont
 
-	def _generateExpLabel( self ) : 
-		self.expLabel = Label()
-		self.expLabel.size_hint = 1, 0.2
+	def _generateExpLabel( self, cont ) : 
+		self.expLabel = Label( 
+			size_hint = ( 1, 0.3 ), \
+			shorten = True
+		)
 		return self.expLabel
 
 	def _generateConfirmButton( self, onConfirm ) :
@@ -634,9 +641,9 @@ class PlottingPanel( Popup ) :
 		else :
 			Popup.dismiss( self )
 			if self.expLabel.text[0] in ( "[", "(" ) :
-				return map( eval, self.expLabel.text[1:-1].split( "," ) )
+				return map( eval, self.expText[1:-1].split( "," ) )
 			else :
-				return eval( self.expLabel.text )
+				return eval( self.expText )
 
 	def setConfig( self, config=None ) :
 		if not config is None :

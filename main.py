@@ -95,17 +95,18 @@ just write to me : [/color]
 		self.text2 = """
 [color=#44DD44]More technical details...
 The plotter will accept any list-like input!
-for example :
-foos = []
-for i in range(1,4) :
-    foos.append( x**3 - i*x )
-and then type "foos" and press plot...
-...Or, less trivially :
-map( lambda f,i : f - i*x, \\
-     [ x**3 ]*10, \\
-     range(0,10) )[/color]
-"""
+Some example :
+#1. Directly type a list and press plot...
+[ x, x+1, x+2, x+3, x+4 ] 
 
+#2. Use Python! Populate a list and the plot it...
+myList = []
+for i in range(0,5) : 
+	myList.append( x+i )
+
+#3. Use Functional Programming!
+map( lambda i: x+i, range(0,10) )[/color]
+"""
 		self.lbl = Label( markup=True, text=self.text1 )
 		cont.add_widget( self.lbl )
 		btn = Button( text="..." )
@@ -131,7 +132,7 @@ map( lambda f,i : f - i*x, \\
 class KiPyCalcApp( App ) : 
 
 	icon = 'res/icon.png'
-	title = 'Kipycalc'
+	title = 'Kipycalc Pro'
 	
 	def build( self ) :
 		self.kpc = KiPyCalc()
