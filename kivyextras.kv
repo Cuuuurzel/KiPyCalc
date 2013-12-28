@@ -6,8 +6,9 @@
 		Color:
 			rgb: self.color
 		Rectangle:
-			size: self.size
-			pos: self.pos
+			size: self.size[0]-self.m[0]*2, self.size[1]-self.m[1]*2
+			pos: self.pos[0]+self.m[0], self.pos[1]+self.m[1]
+
 
 <NumericUpDown>:
     txtvalue: txtvalue

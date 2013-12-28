@@ -12,10 +12,11 @@ from sympy.abc import *
 from sympy.utilities.lambdify import lambdify
 import sys
 from keyboard import *
+from kivyextras import *
 
 FONT_NAME = "res/ubuntu-font-family-0.80/UbuntuMono-R.ttf"
-FONT_SIZE = 18
-DEBUG = True
+FONT_SIZE = screen_size()[1] / 40
+DEBUG = False
 INDENT = "    "
 
 class PyShell( BoxLayout ) :
@@ -44,6 +45,9 @@ class PyShell( BoxLayout ) :
 			sys.stdout = self
 			sys.stderr = self
 		self.shellInit()
+
+	def getInput( self ) :
+		return self.kb.current.text
 
 	def shellInit( self ) :
 		initCode = open( "res/SHELL_INIT" ).read()
@@ -76,7 +80,6 @@ class PyShell( BoxLayout ) :
 
 	def pushCode( self, code, printANS ) :
 		self.printAns( printANS )
-		indent = 0
 
 		for line in code.split( "\n" ) :
 			sublines = self.splitOneLiner( line )
@@ -104,9 +107,6 @@ class PyShell( BoxLayout ) :
 	def printAns( self, printANS ) :
 		if printANS : 
 			self.console.push( "last_ANS = ans\n" )
-
-	def pushNewLine( self ) :
-		self.console.push( "\n" )
 
 	def afterRun( self, moreInputNeeded, printANS ) :
 		if moreInputNeeded : 

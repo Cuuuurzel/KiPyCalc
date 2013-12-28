@@ -1,33 +1,4 @@
-#:kivy 1.7
-
-<Plotter>:
-	lblPoints: lblPoints
-
-    canvas:
-        Color: 
-            rgb: 0, 0, 0, 1
-        Rectangle:
-            pos: 0,0
-            size: self.size
-
-        Color: 
-            rgb: self.plotColor
-        Line:
-            width: 1
-            points: self.points
-
-        Color: 
-            rgb: self.axisColor
-        Line:
-            width: 1
-            points: [ -self.xRange[0]*self.ppx, 0, -self.xRange[0]*self.ppx, self.height ]
-        Line:
-            width: 1
-            points: [ 0, -self.yRange[0]*self.ppy, self.width, -self.yRange[0]*self.ppy ]
-	Label:
-		id: lblPoints
-		pos: self.parent.width-5*self.width/3, self.parent.height-self.height
-
+#:kivy 1.0
 
 <SpecialPoint>:
 	lbl: lbl
@@ -54,3 +25,33 @@
 		id: lbl
 		size: 30, 30
 		pos: self.parent.pos
+
+<SinglePlotter>:
+	lblPoints: lblPoints
+
+    canvas:
+        Color: 
+            rgb: 0, 0, 0, 1
+        Rectangle:
+            pos: 0,0
+            size: self.size
+
+        Color: 
+            rgb: self.plotColor
+        Line:
+            width: 1
+            points: self.points
+
+        Color: 
+            rgb: self.axisColor
+        Line:
+            width: 1
+            points: [ -self.xRange[0]*self.ppx, 0, -self.xRange[0]*self.ppx, self.height ]
+        Line:
+            width: 1
+            points: [ 0, -self.yRange[0]*self.ppy, self.width, -self.yRange[0]*self.ppy ]
+
+	Label:
+		id: lblPoints
+		pos: self.parent.width-5*self.width/3, self.parent.height-self.height
+
