@@ -12,7 +12,7 @@ from sympy import *
 from sympy.abc import *
 
 FONT_NAME = "res/ubuntu-font-family-0.80/UbuntuMono-R.ttf"
-FONT_SIZE = 16
+FONT_SIZE = getFontSize()
 
 class KiPyCalc( BoxLayout ) :
 

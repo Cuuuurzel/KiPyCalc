@@ -37,7 +37,7 @@ Builder.load_file( "kipycalc.kv" )
 
 ALPHABET = "ABCDEFGHJKILMNOPQRSTUVWXYZ"
 FONT_NAME = "res/ubuntu-font-family-0.80/UbuntuMono-R.ttf"
-FONT_SIZE = 16
+FONT_SIZE = getFontSize()
 		
 class SpecialPoint( Widget ) :
 	
@@ -596,7 +596,7 @@ class PlottingPanel( Popup ) :
 		self.btnPlotColor2 = ColoredButton( color=[1,0,0] )
 		self.btnPlotColor2.bind( on_press=self.plotColorChooser2.open )
 		plotColor2Zone = BoxLayout()
-		plotColor2Zone.add_widget( Label( text="2nd plot color : \n(Used to create shades)" ) )
+		plotColor2Zone.add_widget( Label( text="2nd plot color : \n(Used to create gradients)" ) )
 		plotColor2Zone.add_widget( self.btnPlotColor2 )
 		
 		#Packing
@@ -667,3 +667,4 @@ class PlottingPanel( Popup ) :
 			"yRange"    : (self.yRangeMin.value, self.yRangeMax.value) 
 		}
 		return config
+

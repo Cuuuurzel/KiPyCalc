@@ -15,7 +15,7 @@ from keyboard import *
 from kivyextras import *
 
 FONT_NAME = "res/ubuntu-font-family-0.80/UbuntuMono-R.ttf"
-FONT_SIZE = screen_size()[1] / 40
+FONT_SIZE = getFontSize()
 DEBUG = False
 INDENT = "    "
 
@@ -28,7 +28,7 @@ class PyShell( BoxLayout ) :
 
 		frm = BoxLayout( orientation="vertical" )
 		self.listed = TextInput()
-		self.listed.font_size = FONT_SIZE
+		self.listed.font_size = FONT_SIZE * ( 5/6.0 )
 		self.listed.font_name = FONT_NAME
 		self.listed.readonly = True
 		self.listed.size_hint = 1, 0.3

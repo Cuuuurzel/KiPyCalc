@@ -10,7 +10,7 @@ from kivy.uix.widget import Widget
 from kivyextras import *
 
 FONT_NAME = "res/ubuntu-font-family-0.80/UbuntuMono-R.ttf"
-FONT_SIZE = screen_size()[1] / 40
+FONT_SIZE = getFontSize()
 
 def loadButtonsFromString( someWidget, names, onPress ) :
 	for name in names : 
@@ -67,7 +67,6 @@ class KiPyKeyboard( BoxLayout ) :
 		self.foo2.size_hint = 0.4, 1
 
 		self.kb = BoxLayout( orientation="horizontal" )
-		self.kb.size_hit = 1, 0.33
 		self.static_keys.size_hit = 1, 0.33
 		inp.size_hint = 1, 0.6
 		self.add_widget( inp )
