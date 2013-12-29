@@ -23,14 +23,9 @@ from __future__ import division
 
 #The last result
 ans = 0
-#The previous result
-last_ANS = 0
 
 print( "#Type 'ans' to refer to the last result." )
-print( "#Keep in mind that :" )
-print( "#    1. Numeric values differs a lot from symbolic one." )
-print( "#    2. Your using a Python interpreter!" )
-print( "#    3. Indent\\tab size is 4 space!" )
+print( "#Keep in mind that your using a Python interpreter!" )
 print( "#Need more? Check the 'SHELL_INIT' file in your SD card!" )
 
 def evalf( *largs ) :

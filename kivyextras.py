@@ -13,14 +13,7 @@ Builder.load_file( "kivyextras.kv" )
 def screen_size() : return float( Config.get( 'graphics', 'width' ) ), float( Config.get( 'graphics', 'height' ) )
 
 def getFontSize() :
-	return screen_size()[0] / 20
-	"""
-	w = screen_size()[0] 
-	print( w) 
-	if w >= 720 : return w / 20
-	if w >= 480 : return w / 12
-	if w >= 0 : return w / 8
-	"""
+	return screen_size()[0] / 25
 
 def setFont( widget, fn, fs ) :
 	try :

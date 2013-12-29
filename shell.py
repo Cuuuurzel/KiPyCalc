@@ -18,6 +18,7 @@ FONT_NAME = "res/ubuntu-font-family-0.80/UbuntuMono-R.ttf"
 FONT_SIZE = getFontSize()
 DEBUG = False
 INDENT = "    "
+HOTKEYS = ['and', 'as', 'assert', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'exec', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'or', 'pass', 'print', 'raise', 'return', 'try', 'while', 'with', 'yield']
 
 class PyShell( BoxLayout ) :
 
@@ -64,10 +65,9 @@ class PyShell( BoxLayout ) :
 		print( "in : " + stat[:-1] )
 
 		if stat.upper() in ( "ANS\n", "ANS" ) :
-			#return "print( ans )", False
 			return "", True
 		
-		keys = map( lambda word : word.upper(), keyword.kwlist ) #keyword.kwlist
+		keys = map( lambda word : word.upper(), HOT_KEYS )
 		for key in keys : 
 			if key in stat.upper() : 
 				return stat, False
@@ -75,12 +75,10 @@ class PyShell( BoxLayout ) :
 
 	def onBtnExecPress( self, instance ) :
 		stat = self.kb.current.text + "\n"
-		stat, printANS = self.correctInput( stat )
-		self.pushCode( stat, printANS )
+		stat, updateAns = self.correctInput( stat )
+		self.pushCode( stat, updateAns )
 
-	def pushCode( self, code, printANS ) :
-		self.printAns( printANS )
-
+	def pushCode( self, code, updateAns ) :
 		for line in code.split( "\n" ) :
 			sublines = self.splitOneLiner( line )
 			for subline in sublines :
@@ -103,10 +101,6 @@ class PyShell( BoxLayout ) :
 			
 	def withoutSpaces( self, line ) :
 		return line.replace( " ", "" ).replace( "\t", "" )
-
-	def printAns( self, printANS ) :
-		if printANS : 
-			self.console.push( "last_ANS = ans\n" )
 
 	def afterRun( self, moreInputNeeded, printANS ) :
 		if moreInputNeeded : 

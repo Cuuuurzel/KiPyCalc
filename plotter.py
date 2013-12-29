@@ -596,7 +596,7 @@ class PlottingPanel( Popup ) :
 		self.btnPlotColor2 = ColoredButton( color=[1,0,0] )
 		self.btnPlotColor2.bind( on_press=self.plotColorChooser2.open )
 		plotColor2Zone = BoxLayout()
-		plotColor2Zone.add_widget( Label( text="2nd plot color : \n(Used to create gradients)" ) )
+		plotColor2Zone.add_widget( Label( text="2nd plot color :" ) )
 		plotColor2Zone.add_widget( self.btnPlotColor2 )
 		
 		#Packing
