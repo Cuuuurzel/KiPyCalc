@@ -132,7 +132,7 @@ map( lambda i: x+i, range(0,10) )[/color]
 class KiPyCalcApp( App ) : 
 
 	icon = 'res/icon.png'
-	title = 'Kipycalc Pro'
+	title = 'Kipycalc'
 	
 	def build( self ) :
 		self.kpc = KiPyCalc()

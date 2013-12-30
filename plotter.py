@@ -231,18 +231,12 @@ class Plotter( Widget ) :
 				kg.Color( 1, 1, 1, 1, group="axis" )
 				kg.Line( points=self.getXAxis(), width=1, group="axis" )
 				kg.Line( points=self.getYAxis(), width=1, group="axis" )
+
+	def getYAxis( self ) :
+		return [ -self.xRange[0]*self.ppx, 0, -self.xRange[0]*self.ppx, self.height ]
 					
 	def getXAxis( self ) :
-		px = ( -self.xRange[0] ) * self.ppx
-		p1y = ( self.yRange[1] - self.yRange[0] ) * self.ppy
-		p2y = ( self.yRange[0] ) * self.ppy
-		return [ px, p1y, px, p2y ]
-					
-	def getYAxis( self ) :
-		py = ( -self.yRange[0] ) * self.ppy
-		p1x = ( self.xRange[1] - self.xRange[0] ) * self.ppx
-		p2x = ( self.xRange[0] ) * self.ppx
-		return [ p1x, py, p2x, py ]
+		return [ 0, -self.yRange[0]*self.ppy, self.width, -self.yRange[0]*self.ppy ]
 
 	def restoreCanvas( self ) :
 		self.canvas.remove_group( "functions" )

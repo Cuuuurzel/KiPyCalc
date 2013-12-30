@@ -18,7 +18,7 @@ FONT_NAME = "res/ubuntu-font-family-0.80/UbuntuMono-R.ttf"
 FONT_SIZE = getFontSize()
 DEBUG = False
 INDENT = "    "
-HOTKEYS = ['and', 'as', 'assert', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'exec', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'or', 'pass', 'print', 'raise', 'return', 'try', 'while', 'with', 'yield']
+HOT_KEYS = ['as', 'assert', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'exec', 'finally', 'for', 'from', 'global', 'if', 'import', 'pass', 'print', 'raise', 'return', 'try', 'while', 'with', 'yield']
 
 class PyShell( BoxLayout ) :
 
@@ -61,17 +61,22 @@ class PyShell( BoxLayout ) :
 
 	def correctInput( self, stat ) :
 		stat = stat.replace( "\t", INDENT )
-		if stat == "\n" : stat = "ans\n"
+		if stat == "\n" or stat == "" : stat = "ans\n"
 		print( "in : " + stat[:-1] )
 
-		if stat.upper() in ( "ANS\n", "ANS" ) :
-			return "", True
+		if stat == "ans\n" or stat == "ans" :
+			return "ans", True
 		
-		keys = map( lambda word : word.upper(), HOT_KEYS )
-		for key in keys : 
-			if key in stat.upper() : 
-				return stat, False
-		return "ans = " + stat, True			
+		if not self.providesValidValue( stat ) :
+			return stat, False
+		return stat, True			
+
+	def providesValidValue( self, stat ) :
+		for key in HOT_KEYS :
+			if stat.startswith( key ) : 
+				if not stat[ len( key ) ].isalnum :
+					return False
+		return True
 
 	def onBtnExecPress( self, instance ) :
 		stat = self.kb.current.text + "\n"
@@ -79,11 +84,16 @@ class PyShell( BoxLayout ) :
 		self.pushCode( stat, updateAns )
 
 	def pushCode( self, code, updateAns ) :
+		if updateAns : code = "ans = " + code
+
+		"""
 		for line in code.split( "\n" ) :
 			sublines = self.splitOneLiner( line )
 			for subline in sublines :
 				moreInputNeeded = self.console.push( subline )
-		self.afterRun( moreInputNeeded, printANS )
+		"""
+		moreInputNeeded = self.console.push( code )
+		self.afterRun( moreInputNeeded, updateAns )
 
 	def splitOneLiner( self, line ) :
 		braces = 0
@@ -102,13 +112,13 @@ class PyShell( BoxLayout ) :
 	def withoutSpaces( self, line ) :
 		return line.replace( " ", "" ).replace( "\t", "" )
 
-	def afterRun( self, moreInputNeeded, printANS ) :
+	def afterRun( self, moreInputNeeded, printAns ) :
 		if moreInputNeeded : 
 			self.console.push( "\n" )
 			print( "#Multiline instructions must be entered in one single step!" )
 		else :
-			self.console.push( "if ans is None : ans = last_ANS\n" )
-			if printANS : self.console.push( "print( ans )\n" )
+			if printAns : 
+				self.console.push( "print( ans )\n" )
 			self.kb.flush() 			
 
 	def lineIndent( self, line ) :
