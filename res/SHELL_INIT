@@ -14,11 +14,11 @@ from math import *
 #Check this out : http://sympy.org/en/index.html
 from sympy import *
 from sympy.abc import *
+from sympy.physics.units import *
 
-#Let's say you have to make a division ( 5/2 )...
-#If both the member of the operation are intergers, 
-#python, by default returns an integer ( so, 2 instead of 2.5 )
-#This import forces python to return a float result ( 2.5 )
+#Let's say you have to make a division between integers...
+#Python 2.x, will return integer.
+#This import forces python to return a float result.
 from __future__ import division
 
 #The last result
