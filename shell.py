@@ -67,14 +67,16 @@ class PyShell( BoxLayout ) :
 		if stat == "ans\n" or stat == "ans" :
 			return "ans", True
 		
-		if not self.providesValidValue( stat ) :
+		if not self.providesValidValue( stat.lower() ) :
 			return stat, False
 		return stat, True			
 
 	def providesValidValue( self, stat ) :
+		print( "Oo_" + stat + "_oO" )
+		print( "Oo_" + str(HOT_KEYS) + "_oO" )
 		for key in HOT_KEYS :
 			if stat.startswith( key ) : 
-				if not stat[ len( key ) ].isalnum :
+				if not stat[ len( key ) ].isalnum() :
 					return False
 		return True
 
@@ -89,22 +91,6 @@ class PyShell( BoxLayout ) :
 		for line in code.split( "\n" ) :
 			moreInputNeeded = self.console.push( line )
 		self.afterRun( moreInputNeeded, updateAns )
-
-	"""
-	def splitOneLiner( self, line ) :
-		braces = 0
-		brackets = 0
-
-		for i, char in enumerate( line ) :
-			if char == "{" : braces += 1
-			if char == "[" : brackets += 1
-			if char == "}" : braces -= 1
-			if char == "]" : brackets -= 1
-			if braces == 0 and brackets == 0 and char == ":" :
-				if len( self.withoutSpaces( line[i:] ) ) > 0 :
-					return [ line[:i+1], line[i+1:]+"\n" ]
-		return [line]
-	"""
 		
 	def withoutSpaces( self, line ) :
 		return line.replace( " ", "" ).replace( "\t", "" )
