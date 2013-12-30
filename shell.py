@@ -72,8 +72,6 @@ class PyShell( BoxLayout ) :
 		return stat, True			
 
 	def providesValidValue( self, stat ) :
-		print( "Oo_" + stat + "_oO" )
-		print( "Oo_" + str(HOT_KEYS) + "_oO" )
 		for key in HOT_KEYS :
 			if stat.startswith( key ) : 
 				if not stat[ len( key ) ].isalnum() :
