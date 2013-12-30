@@ -279,7 +279,6 @@ class Plotter( Widget ) :
 		self.setIndicators()
 
 	def on_touch_move( self, touch ) :
-		#check if the touch is sigle or multiple
 		if len( self.touches ) == 1 :
 			self.movePlot()
 		elif len( self.touches ) == 2 :
@@ -498,11 +497,11 @@ class PlottingPanel( Popup ) :
 						content = self._generateContent( onConfirm ), \
 						size_hint = ( 0.95,0.95 ) )
 		setFont( self.content, FONT_NAME, FONT_SIZE )
-		self.expLabel.font_size = FONT_SIZE + 5
+		self.expLabel.font_size = 5 * FONT_SIZE / 4
 
 	def expLabelFix( self ) :
 		width = self.expLabel.width = self.width
-		txtLen = len( self.expLabel.text )
+		txtLen = len( self.expLabel.text ) * self.expLabel.font_size
 
 		if txtLen > width :
 			n = int( width / FONT_SIZE )
@@ -518,8 +517,8 @@ class PlottingPanel( Popup ) :
 		areaChoosingZone = self._generateAreaChoosingZone()
 
 		cont.add_widget( self._generateExpLabel( cont ) )
-		cont.add_widget( colorChoosingZone )
 		cont.add_widget( areaChoosingZone )
+		cont.add_widget( colorChoosingZone )
 		cont.add_widget( self._generateConfirmButton( onConfirm ) )
 		
 		return cont
@@ -538,21 +537,22 @@ class PlottingPanel( Popup ) :
 		return btnConfirm
 
 	def _generateAreaChoosingZone( self ) :
-		xRange = BoxLayout( orientation="vertical" )
+		xRange = BoxLayout( orientation="horizontal" )
 		xRange.add_widget( Label( text="X range :" ) )
 		self.xRangeMin = NumericUpDown( value=-1, vstep=0.1 )
 		self.xRangeMax = NumericUpDown( value=1, vstep=0.1 )
 		xRange.add_widget( self.xRangeMin )
 		xRange.add_widget( self.xRangeMax )
 
-		yRange = BoxLayout( orientation="vertical" )
+		yRange = BoxLayout( orientation="horizontal" )
 		yRange.add_widget( Label( text="Y range :" ) )
 		self.yRangeMin = NumericUpDown( value=-1, vstep=0.1 )
 		self.yRangeMax = NumericUpDown( value=1, vstep=0.1 )
 		yRange.add_widget( self.yRangeMin )
 		yRange.add_widget( self.yRangeMax )
 
-		areaChoosingZone = BoxLayout( orientation="horizontal" )
+		areaChoosingZone = BoxLayout( orientation="vertical" )
+		#Add some "min" and "max" label
 		areaChoosingZone.spacing = 30
 		areaChoosingZone.add_widget( xRange )
 		areaChoosingZone.add_widget( yRange ) 
