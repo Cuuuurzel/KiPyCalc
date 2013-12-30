@@ -86,15 +86,11 @@ class PyShell( BoxLayout ) :
 	def pushCode( self, code, updateAns ) :
 		if updateAns : code = "ans = " + code
 
-		"""
 		for line in code.split( "\n" ) :
-			sublines = self.splitOneLiner( line )
-			for subline in sublines :
-				moreInputNeeded = self.console.push( subline )
-		"""
-		moreInputNeeded = self.console.push( code )
+			moreInputNeeded = self.console.push( line )
 		self.afterRun( moreInputNeeded, updateAns )
 
+	"""
 	def splitOneLiner( self, line ) :
 		braces = 0
 		brackets = 0
@@ -108,7 +104,8 @@ class PyShell( BoxLayout ) :
 				if len( self.withoutSpaces( line[i:] ) ) > 0 :
 					return [ line[:i+1], line[i+1:]+"\n" ]
 		return [line]
-			
+	"""
+		
 	def withoutSpaces( self, line ) :
 		return line.replace( " ", "" ).replace( "\t", "" )
 
