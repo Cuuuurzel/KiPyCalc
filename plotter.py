@@ -537,27 +537,35 @@ class PlottingPanel( Popup ) :
 		return btnConfirm
 
 	def _generateAreaChoosingZone( self ) :
-		xRange = BoxLayout( orientation="horizontal" )
-		xRange.add_widget( Label( text="X range :" ) )
-		self.xRangeMin = NumericUpDown( value=-1, vstep=0.1 )
-		self.xRangeMax = NumericUpDown( value=1, vstep=0.1 )
-		xRange.add_widget( self.xRangeMin )
-		xRange.add_widget( self.xRangeMax )
+		self.xRangeMin = TextInput( text="-1", multiline=False, size_hint=[0.4,1] )
+		self.xRangeMax = TextInput( text="+1", multiline=False, size_hint=[0.4,1] )
+		self.yRangeMin = TextInput( text="-1", multiline=False, size_hint=[0.4,1] )
+		self.yRangeMax = TextInput( text="+1", multiline=False, size_hint=[0.4,1] )
 
-		yRange = BoxLayout( orientation="horizontal" )
-		yRange.add_widget( Label( text="Y range :" ) )
-		self.yRangeMin = NumericUpDown( value=-1, vstep=0.1 )
-		self.yRangeMax = NumericUpDown( value=1, vstep=0.1 )
-		yRange.add_widget( self.yRangeMin )
-		yRange.add_widget( self.yRangeMax )
+		r1 = BoxLayout( orientation="horizontal" )
+		r1.spacing = 10
+		r1.add_widget( Label( text="Var.", size_hint=[0.2,1]  ) )
+		r1.add_widget( Label( text="From", size_hint=[0.4,1] ) )
+		r1.add_widget( Label( text="To",   size_hint=[0.4,1] ) )
 
-		areaChoosingZone = BoxLayout( orientation="vertical" )
-		#Add some "min" and "max" label
-		areaChoosingZone.spacing = 30
-		areaChoosingZone.add_widget( xRange )
-		areaChoosingZone.add_widget( yRange ) 
+		r2 = BoxLayout( orientation="horizontal" )
+		r2.spacing = 10
+		r2.add_widget( Label( text="x :", size_hint=[0.2,1] ) )
+		r2.add_widget( self.xRangeMin )
+		r2.add_widget( self.xRangeMax )
 
-		return areaChoosingZone
+		r3 = BoxLayout( orientation="horizontal" )
+		r3.spacing = 10
+		r3.add_widget( Label( text="y :", size_hint=[0.2,1] ) )
+		r3.add_widget( self.yRangeMin )
+		r3.add_widget( self.yRangeMax )
+	
+		a = BoxLayout( orientation="vertical" )
+		a.spacing = 10
+		a.add_widget( r1 )
+		a.add_widget( r2 )
+		a.add_widget( r3 )
+		return a
 
 	def _generateColorChoosingZone( self ) :		
 		#Axis color
@@ -647,18 +655,18 @@ class PlottingPanel( Popup ) :
 			self.btnPlotColor1.color = config[ "plotColor1" ]
 			self.btnPlotColor2.color = config[ "plotColor2" ]
 			self.btnAxisColor.color = config[ "axisColor" ]
-			self.xRangeMin.value = float( "%.3f" % config[ "xRange" ][0] )
-			self.xRangeMax.value = float( "%.3f" % config[ "xRange" ][1] )
-			self.yRangeMin.value = float( "%.3f" % config[ "yRange" ][0] )
-			self.yRangeMax.value = float( "%.3f" % config[ "yRange" ][1] )
+			self.xRangeMin.text = str( config[ "xRange" ][0] )
+			self.xRangeMax.text = str( config[ "xRange" ][1] )
+			self.yRangeMin.text = str( config[ "yRange" ][0] )
+			self.yRangeMax.text = str( config[ "yRange" ][1] )
 
 	def getConfig( self ) : 
 		config = { 
 			"axisColor" : self.axisColorChooser.rgb(), \
 			"plotColor1" : self.plotColorChooser1.rgb(), \
 			"plotColor2" : self.plotColorChooser2.rgb(), \
-	   		"xRange"	: (self.xRangeMin.value, self.xRangeMax.value), \
-			"yRange"    : (self.yRangeMin.value, self.yRangeMax.value) 
+	   		"xRange"	: ( float( self.xRangeMin.text ), float( self.xRangeMax.text ) ), \
+			"yRange"    : ( float( self.yRangeMin.text ), float( self.yRangeMax.text ) ) 
 		}
 		return config
 
