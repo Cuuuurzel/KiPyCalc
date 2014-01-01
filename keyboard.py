@@ -75,10 +75,13 @@ class KiPyKeyboard( BoxLayout ) :
 		self.shiftCount = -1
 		self.onShift()
 
+	def saveHtml( self ) :
+		self.parent.parent.saveHtml()
+
 	def loadStaticKeys( self ) :
 		k1 = "<- space tab \\n ->".split( " " )
 		k2 = "{ [ ( , ) ] }".split( " " )
-		k3 = "evalf ans print undo clear shift".split( " " )
+		k3 = "evalf ans pprint clear shift HTML".split( " " )
 		k4 = "+ - * / ** =".split( " " ) + [ u"√" ]
 		default_keys = ( k1, k2, k3, k4 )
 
@@ -139,16 +142,16 @@ class KiPyKeyboard( BoxLayout ) :
 		elif command == "space" : toInsert = " "
 		elif command == "shift" : self.onShift()
 		elif command == "\\n" :   toInsert = "\n"
-		elif command == "tab" :   toInsert = "	"
-		elif command == "\\t" :   toInsert = "	"
-		elif command == "print" : toInsert = "pprint( ans )"
+		elif command == "tab" :   toInsert = "    "
+		elif command == "\\t" :   toInsert = "    "
+		elif command == "pprint" : toInsert = "pprint( ans )"
+		elif command == "HTML" : self.saveHtml()
 		elif command == "<-" :	self.current.do_cursor_movement( 'cursor_left' )
 		elif command == "->" :	self.current.do_cursor_movement( 'cursor_right' )
-		elif command == "undo" :  self.current.do_undo()
-		#all the rest...
 		else : 
 			toInsert = command
-		self.current.insert_text( toInsert )
+		#self.current.insert_text( toInsert )
+		self.current.text += toInsert
 
 	def flush( self ) : 
 		self.current.text = ""

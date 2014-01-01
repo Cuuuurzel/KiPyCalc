@@ -1,37 +1,36 @@
 class History() : 
 
+	INPUT = 0
+	OUTPUT = 1
+	KIPY_MSG = 2
+	PLOT_PATH = 3
+
 	def __init__( self ) :
-		self.inputs = []
-		self.inputs_strings = []
-		self.outputs = []
-		self.outputs_strings = []
+		self.h = []
 
-	def putInput( self, newInput, strInput ) :
-		inputs.append( newInput )
-		inputs_strings.append( strInput )
-
-	def putOutput( self, newOutput, strOutput) :
-		outputs.append( newOutput )
-		outputs_strings.append( strOutput )
-		pass
+	def put( self, kind, newInput ) :
+		self.h.append( [ kind, str( newInput ) ] )
 
 	def getHtml( self ) :
-		s = "<html>\n\t<body>"
-		div = '<div class="kipyInput">'
-		for i in range( 0, len( self.inputs_strings ) ) :
-			s += div + self.inputs_strings[i] + "<div>\n"
-			s += div + self.outputs_strings[i] + "<div>"
+		s = """<html>
+	<style media="screen" type="text/css">
+		.kipyINPUT  { text-align:left   } 
+		.kipyOUTPUT { text-align:center  } 
+		.kipyMSG    { text-align:center } 
+		.kipyPLOT   { text-align:center } 
+	</style>
 
-	def getInput( self, i=-1 ) :
-		return self.inputs[ i ]
+	<body>
+"""
+		for i in range( 0, len( self.h ) ) :
+			if   self.h[i][0] == History.INPUT : s += '<p class="kipyINPUT">'
+			elif self.h[i][0] == History.OUTPUT : s += '<p class="kipyOUTPUT">'
+			elif self.h[i][0] == History.KIPY_MSG : s += '<p class="kipyMSG">'
+			elif self.h[i][0] == History.PLOT_PATH : s += '<p class="kipyPLOT">'
+			s += self.h[i][1] + "</p>\n"
 
-	def getInputStr( self, i=-1 ) :
-		return self.inputs_strings[ i ]
-
-	def getOutput( self, i=-1 ) :
-		return self.outputs[ i ]
-
-	def getOutputStr( self, i=-1 ) :
-		return self.outputs_strings[ i ]
-
-
+		s += """
+	</body>
+</html>
+"""
+		return s

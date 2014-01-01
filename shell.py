@@ -7,18 +7,21 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
 from kivy.uix.scrollview import ScrollView
+
 from sympy import *
 from sympy.abc import *
 from sympy.utilities.lambdify import lambdify
 import sys
+import time
 from keyboard import *
 from kivyextras import *
+from history import *
 
 FONT_NAME = "res/ubuntu-font-family-0.80/UbuntuMono-R.ttf"
 FONT_SIZE = getFontSize()
 DEBUG = False
 INDENT = "    "
-HOT_KEYS = ['as', 'assert', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'exec', 'finally', 'for', 'from', 'global', 'if', 'import', 'pass', 'print', 'raise', 'return', 'try', 'while', 'with', 'yield']
+HOT_KEYS = ['as', 'assert', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'exec', 'finally', 'for', 'from', 'global', 'if', 'import', 'pass', 'print', 'pprint', 'raise', 'return', 'try', 'while', 'with', 'yield']
 
 class PyShell( BoxLayout ) :
 
@@ -34,6 +37,8 @@ class PyShell( BoxLayout ) :
 		self.listed.readonly = True
 		self.listed.size_hint = 1, 0.3
 
+		self.history = History()
+
 		frm.add_widget( self.listed )
 		self.kb = KiPyKeyboard( self.onBtnExecPress, plotFoo )
 		self.kb.size_hint = 1, 0.7
@@ -41,10 +46,19 @@ class PyShell( BoxLayout ) :
 		frm.size_hint = 1,1
 		self.add_widget( frm )
 
+	def saveHtml( self ) :		
+		self.history.put( History.KIPY_MSG, "Saved HTML page..." )
+		path = time.asctime().replace( " ", "_" ).replace( ":", "-" ) + ".html"
+		f = open( path, "w" )
+		f.write( self.history.getHtml() )
+		print( 'Saved to "sdcard\\org.cuuuurzel.KiPyCalc\\current date"' )
+		f.close()
+
 	def start( self ) :
 		if not DEBUG :
 			sys.stdout = self
 			sys.stderr = self
+		self.history.put( History.KIPY_MSG, "Session started" )
 		self.shellInit()
 
 	def getInput( self ) :
@@ -80,12 +94,16 @@ class PyShell( BoxLayout ) :
 
 	def onBtnExecPress( self, instance ) :
 		stat = self.kb.current.text + "\n"
+		self.history.put( History.INPUT, stat[:-1] )
+		if DEBUG :
+			self._lastOutput.append( "Some output1" )
+			self._lastOutput.append( "Some output2" )
 		stat, updateAns = self.correctInput( stat )
 		self.pushCode( stat, updateAns )
+		self.history.put( History.OUTPUT, self._lastOutput[-2] )
 
 	def pushCode( self, code, updateAns ) :
 		if updateAns : code = "ans = " + code
-
 		for line in code.split( "\n" ) :
 			moreInputNeeded = self.console.push( line )
 		self.afterRun( moreInputNeeded, updateAns )

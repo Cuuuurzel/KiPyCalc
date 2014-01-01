@@ -29,6 +29,7 @@ print( "#Keep in mind that your using a Python interpreter!" )
 print( "#Need more? Check the 'SHELL_INIT' file in your SD card!" )
 
 def evalf( *largs ) :
+	if largs is None : return 0
 	if len( largs ) == 0 : return evalf_NonList( ans )
 	elif len( largs ) == 1 : something = largs[0]
 	else : something = largs
@@ -41,7 +42,7 @@ def evalf( *largs ) :
 		return evalf_NonList( something )
 
 def evalf_NonList( something=None ) : 
-	if something is None : return evalf_NonList( ans )
+	if something is None : return 0
 	try : 
 		return something.evalf()
 	except AttributeError :

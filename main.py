@@ -78,9 +78,9 @@ class KiPyCalcApp( App ) :
 		return self.kpc
 
 	def hook_keyboard( self, window, key, *largs ):
-		if key == 27 : #return (esc) key
+		if key == 27 : 
 			return self.kpc.onReturnKey() 
-		if key == 319 : #menu key
+		if key == 319 :
 			return self.kpc.onMenuKey()		 
 
 	def on_pause( self ) : 

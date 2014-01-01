@@ -537,10 +537,10 @@ class PlottingPanel( Popup ) :
 		return btnConfirm
 
 	def _generateAreaChoosingZone( self ) :
-		self.xRangeMin = TextInput( text="-1", multiline=False, size_hint=[0.4,1] )
-		self.xRangeMax = TextInput( text="+1", multiline=False, size_hint=[0.4,1] )
-		self.yRangeMin = TextInput( text="-1", multiline=False, size_hint=[0.4,1] )
-		self.yRangeMax = TextInput( text="+1", multiline=False, size_hint=[0.4,1] )
+		self.xRangeMin = TextInput( text="-1", multiline=False, size_hint=[0.4,1], input_type="number" )
+		self.xRangeMax = TextInput( text="+1", multiline=False, size_hint=[0.4,1], input_type="number" )
+		self.yRangeMin = TextInput( text="-1", multiline=False, size_hint=[0.4,1], input_type="number" )
+		self.yRangeMax = TextInput( text="+1", multiline=False, size_hint=[0.4,1], input_type="number" )
 
 		r1 = BoxLayout( orientation="horizontal" )
 		r1.spacing = 10
