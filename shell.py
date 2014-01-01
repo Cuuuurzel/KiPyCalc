@@ -51,7 +51,7 @@ class PyShell( BoxLayout ) :
 		path = time.asctime().replace( " ", "_" ).replace( ":", "-" ) + ".html"
 		f = open( path, "w" )
 		f.write( self.history.getHtml() )
-		print( 'Saved to "sdcard\\org.cuuuurzel.KiPyCalc\\current date"' )
+		print( '#Saved to "sdcard\\org.cuuuurzel.KiPyCalc\\current date"' )
 		f.close()
 
 	def start( self ) :
