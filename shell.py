@@ -47,7 +47,7 @@ class PyShell( BoxLayout ) :
 		self.add_widget( frm )
 
 	def saveHtml( self ) :		
-		self.history.put( History.KIPY_MSG, "Saved HTML page..." )
+		self.history.put( History.KIPY_MSG, "Session saved on " + time.asctime() )
 		path = time.asctime().replace( " ", "_" ).replace( ":", "-" ) + ".html"
 		f = open( path, "w" )
 		f.write( self.history.getHtml() )
@@ -58,7 +58,7 @@ class PyShell( BoxLayout ) :
 		if not DEBUG :
 			sys.stdout = self
 			sys.stderr = self
-		self.history.put( History.KIPY_MSG, "Session started" )
+		self.history.put( History.KIPY_MSG, "Session started on " + time.asctime() )
 		self.shellInit()
 
 	def getInput( self ) :
