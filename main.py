@@ -2,6 +2,7 @@
 
 from kivy.app import App
 from kivy.base import EventLoop
+from kivy.config import Config
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from shell import *
@@ -13,6 +14,8 @@ from sympy.abc import *
 
 FONT_NAME = "res/ubuntu-font-family-0.80/UbuntuMono-R.ttf"
 FONT_SIZE = getFontSize()
+
+Config.set( 'kivy', 'keyboard', 'system' )
 
 class KiPyCalc( BoxLayout ) :
 
@@ -41,12 +44,15 @@ class KiPyCalc( BoxLayout ) :
 		self.add_widget( self.plotter )
 
 	def getPlotter( self, foos ) :
+		return Plotter( foos, **self.plotterConfig )
+		"""
 		try : 
 			if len( foos ) == 1 :
 				return SinglePlotter( foos, **self.plotterConfig )
 			return Plotter( foos, **self.plotterConfig )
 		except TypeError :
 			return SinglePlotter( foos, **self.plotterConfig )
+		"""
 
 	def onReturnKey( self ) :
 		res = self.plottingPanel.dismiss()		
@@ -64,7 +70,7 @@ class KiPyCalc( BoxLayout ) :
 			self.plotterConfig["xRange"] = self.plotter.xRange
 			self.plotterConfig["yRange"] = self.plotter.yRange
 			self.onPlotRequest( None )
-			return True
+		return True
 
 class KiPyCalcApp( App ) : 
 

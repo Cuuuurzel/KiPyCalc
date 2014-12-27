@@ -6,17 +6,22 @@
     etc.
 
     Methods in this module could be implemented by calling methods on Expr
-    objects instead.  When things stabilize this could be a useful refactoring.
+    objects instead.  When things stabilize this could be a useful
+    refactoring.
 """
 
-from sympy.tensor.indexed import Idx, IndexedBase, Indexed
+from __future__ import print_function, division
+
+from sympy.tensor.indexed import Idx, Indexed
 from sympy.functions import exp
 from sympy.core import C
 
 from sympy.core.compatibility import reduce
 
+
 class IndexConformanceException(Exception):
     pass
+
 
 def _remove_repeated(inds):
     """Removes repeated objects from sequences
@@ -36,8 +41,9 @@ def _remove_repeated(inds):
             sum_index[i] += 1
         else:
             sum_index[i] = 0
-    inds = filter(lambda x: not sum_index[x], inds)
+    inds = [x for x in inds if not sum_index[x]]
     return set(inds), tuple([ i for i in sum_index if sum_index[i] ])
+
 
 def _get_indices_Mul(expr, return_dummies=False):
     """Determine the outer indices of a Mul object.
@@ -54,12 +60,11 @@ def _get_indices_Mul(expr, return_dummies=False):
 
     """
 
-    junk, factors = expr.as_coeff_mul()
-    inds = map(get_indices, factors)
-    inds, syms = zip(*inds)
+    inds = list(map(get_indices, expr.args))
+    inds, syms = list(zip(*inds))
 
-    inds = map(list, inds)
-    inds = reduce(lambda x, y: x + y, inds)
+    inds = list(map(list, inds))
+    inds = list(reduce(lambda x, y: x + y, inds))
     inds, dummies = _remove_repeated(inds)
 
     symmetry = {}
@@ -74,6 +79,7 @@ def _get_indices_Mul(expr, return_dummies=False):
         return inds, symmetry, dummies
     else:
         return inds, symmetry
+
 
 def _get_indices_Pow(expr):
     """Determine outer indices of a power or an exponential.
@@ -123,6 +129,7 @@ def _get_indices_Pow(expr):
 
     return inds, symmetries
 
+
 def _get_indices_Add(expr):
     """Determine outer indices of an Add object.
 
@@ -147,23 +154,24 @@ def _get_indices_Add(expr):
 
     """
 
-    inds = map(get_indices, expr.args)
-    inds, syms = zip(*inds)
+    inds = list(map(get_indices, expr.args))
+    inds, syms = list(zip(*inds))
 
     # allow broadcast of scalars
-    non_scalars = filter(lambda x: x != set(), inds)
+    non_scalars = [x for x in inds if x != set()]
     if not non_scalars:
         return set(), {}
 
-    if not all(map(lambda x: x == non_scalars[0], non_scalars[1:])):
-        raise IndexConformanceException("Indices are not consistent: %s"%expr)
-    if not reduce(lambda x, y: x!=y or y, syms):
+    if not all([x == non_scalars[0] for x in non_scalars[1:]]):
+        raise IndexConformanceException("Indices are not consistent: %s" % expr)
+    if not reduce(lambda x, y: x != y or y, syms):
         symmetries = syms[0]
     else:
         # FIXME: search for symmetries
         symmetries = {}
 
     return non_scalars[0], symmetries
+
 
 def get_indices(expr):
     """Determine the outer indices of expression ``expr``
@@ -172,7 +180,8 @@ def get_indices(expr):
     and a dict.  The set contains outer indices and the dict contains
     information about index symmetries.
 
-    :Examples:
+    Examples
+    ========
 
     >>> from sympy.tensor.index_methods import get_indices
     >>> from sympy import symbols
@@ -209,7 +218,7 @@ def get_indices(expr):
        (set([i, j]), {})
 
        This is correct and may appear convenient, but you need to be careful
-       with this as Sympy wil happily .expand() the product, if requested.  The
+       with this as SymPy will happily .expand() the product, if requested.  The
        resulting expression would mix the outer ``j`` with the dummies inside
        the parenthesis, which makes it a different expression.  To be on the
        safe side, it is best to avoid such ambiguities by using unique indices
@@ -256,10 +265,11 @@ def get_indices(expr):
         elif not expr.has(Indexed):
             return set(), {}
         raise NotImplementedError(
-                "FIXME: No specialized handling of type %s"%type(expr))
+            "FIXME: No specialized handling of type %s" % type(expr))
+
 
 def get_contraction_structure(expr):
-    """Determine dummy indices of ``expr`` and describe it's structure
+    """Determine dummy indices of ``expr`` and describe its structure
 
     By *dummy* we mean indices that are summation indices.
 
@@ -268,12 +278,12 @@ def get_contraction_structure(expr):
     1) A conforming summation of Indexed objects is described with a dict where
        the keys are summation indices and the corresponding values are sets
        containing all terms for which the summation applies.  All Add objects
-       in the Sympy expression tree are described like this.
+       in the SymPy expression tree are described like this.
 
-    2) For all nodes in the Sympy expression tree that are *not* of type Add, the
+    2) For all nodes in the SymPy expression tree that are *not* of type Add, the
        following applies:
 
-       If a node discovers contractions in one of it's arguments, the node
+       If a node discovers contractions in one of its arguments, the node
        itself will be stored as a key in the dict.  For that key, the
        corresponding value is a list of dicts, each of which is the result of a
        recursive call to get_contraction_structure().  The list contains only
@@ -287,10 +297,11 @@ def get_contraction_structure(expr):
        calculated first so that the outer expression can access the resulting
        indexed object.
 
-    :Examples:
+    Examples
+    ========
 
     >>> from sympy.tensor.index_methods import get_contraction_structure
-    >>> from sympy import symbols
+    >>> from sympy import symbols, default_sort_key
     >>> from sympy.tensor import IndexedBase, Idx
     >>> x, y, A = map(IndexedBase, ['x', 'y', 'A'])
     >>> i, j, k, l = map(Idx, ['i', 'j', 'k', 'l'])
@@ -303,11 +314,17 @@ def get_contraction_structure(expr):
     the internal contractions.
 
     >>> d = get_contraction_structure(x[i, i]*y[j, j])
-    >>> sorted(d.keys())
+    >>> sorted(d.keys(), key=default_sort_key)
     [None, x[i, i]*y[j, j]]
-    >>> d[None]  # Note that the product has no contractions
+
+    In this case, the product has no contractions:
+
+    >>> d[None]
     set([x[i, i]*y[j, j]])
-    >>> sorted(d[x[i, i]*y[j, j]])  # factors are contracted ``first''
+
+    Factors are contracted "first":
+
+    >>> sorted(d[x[i, i]*y[j, j]], key=default_sort_key)
     [{(i,): set([x[i, i]])}, {(j,): set([y[j, j]])}]
 
     A parenthesized Add object is also returned as a nested dictionary.  The
@@ -316,12 +333,12 @@ def get_contraction_structure(expr):
     dictionary resulting from a recursive call on the Add expression.
 
     >>> d = get_contraction_structure(x[i]*(y[i] + A[i, j]*x[j]))
-    >>> sorted(d.keys())
-    [(i,), x[i]*(y[i] + A[i, j]*x[j])]
+    >>> sorted(d.keys(), key=default_sort_key)
+    [(x[j]*A[i, j] + y[i])*x[i], (i,)]
     >>> d[(i,)]
-    set([x[i]*(y[i] + A[i, j]*x[j])])
+    set([(x[j]*A[i, j] + y[i])*x[i]])
     >>> d[x[i]*(A[i, j]*x[j] + y[i])]
-    [{None: set([y[i]]), (j,): set([A[i, j]*x[j]])}]
+    [{None: set([y[i]]), (j,): set([x[j]*A[i, j]])}]
 
     Powers with contractions in either base or exponent will also be found as
     keys in the dictionary, mapping to a list of results from recursive calls:
@@ -422,4 +439,4 @@ def get_contraction_structure(expr):
     elif not expr.has(Indexed):
         return {None: set([expr])}
     raise NotImplementedError(
-            "FIXME: No specialized handling of type %s"%type(expr))
+        "FIXME: No specialized handling of type %s" % type(expr))

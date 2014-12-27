@@ -2,7 +2,7 @@ from ..libmp.backend import xrange
 
 # TODO: should use diagonalization-based algorithms
 
-class MatrixCalculusMethods:
+class MatrixCalculusMethods(object):
 
     def _exp_pade(ctx, a):
         """
@@ -67,7 +67,7 @@ class MatrixCalculusMethods:
 
         Basic examples::
 
-            >>> from mpmath import *
+            >>> from sympy.mpmath import *
             >>> mp.dps = 15; mp.pretty = True
             >>> expm(zeros(3))
             [1.0  0.0  0.0]
@@ -111,9 +111,16 @@ class MatrixCalculusMethods:
             42.0927851137247
 
         """
-        A = ctx.matrix(A)
         if method == 'pade':
-            return ctx._exp_pade(A)
+            prec = ctx.prec
+            try:
+                A = ctx.matrix(A)
+                ctx.prec += 2*A.rows
+                res = ctx._exp_pade(A)
+            finally:
+                ctx.prec = prec
+            return res
+        A = ctx.matrix(A)
         prec = ctx.prec
         j = int(max(1, ctx.mag(ctx.mnorm(A,'inf'))))
         j += int(0.5*prec**0.5)
@@ -144,7 +151,7 @@ class MatrixCalculusMethods:
 
         Examples::
 
-            >>> from mpmath import *
+            >>> from sympy.mpmath import *
             >>> mp.dps = 15; mp.pretty = True
             >>> X = eye(3)
             >>> cosm(X)
@@ -173,7 +180,7 @@ class MatrixCalculusMethods:
 
         Examples::
 
-            >>> from mpmath import *
+            >>> from sympy.mpmath import *
             >>> mp.dps = 15; mp.pretty = True
             >>> X = eye(3)
             >>> sinm(X)
@@ -211,7 +218,7 @@ class MatrixCalculusMethods:
 
         Square roots of some simple matrices::
 
-            >>> from mpmath import *
+            >>> from sympy.mpmath import *
             >>> mp.dps = 15; mp.pretty = True
             >>> sqrtm([[1,0], [0,1]])
             [1.0  0.0]
@@ -350,7 +357,7 @@ class MatrixCalculusMethods:
 
         Logarithms of some simple matrices::
 
-            >>> from mpmath import *
+            >>> from sympy.mpmath import *
             >>> mp.dps = 15; mp.pretty = True
             >>> X = eye(3)
             >>> logm(X)
@@ -463,7 +470,7 @@ class MatrixCalculusMethods:
 
         Powers and inverse powers of a matrix::
 
-            >>> from mpmath import *
+            >>> from sympy.mpmath import *
             >>> mp.dps = 15; mp.pretty = True
             >>> A = matrix([[4,1,4],[7,8,9],[10,2,11]])
             >>> powm(A, 2)

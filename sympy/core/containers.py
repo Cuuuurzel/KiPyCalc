@@ -6,9 +6,13 @@
     They are supposed to work seamlessly within the SymPy framework.
 """
 
-from basic import Basic
-from sympify import sympify
+from __future__ import print_function, division
+
+from sympy.core.basic import Basic
+from sympy.core.compatibility import as_int
+from sympy.core.sympify import sympify, converter
 from sympy.utilities.iterables import iterable
+
 
 class Tuple(Basic):
     """
@@ -33,10 +37,10 @@ class Tuple(Basic):
         obj = Basic.__new__(cls, *args, **assumptions)
         return obj
 
-    def __getitem__(self,i):
-        if isinstance(i,slice):
+    def __getitem__(self, i):
+        if isinstance(i, slice):
             indices = i.indices(len(self))
-            return Tuple(*[self.args[i] for i in range(*indices)])
+            return Tuple(*[self.args[j] for j in range(*indices)])
         return self.args[i]
 
     def __len__(self):
@@ -64,6 +68,15 @@ class Tuple(Basic):
         else:
             return NotImplemented
 
+    def __mul__(self, other):
+        try:
+            n = as_int(other)
+        except ValueError:
+            raise TypeError("Can't multiply sequence by non-integer of type '%s'" % type(other))
+        return self.func(*(self.args*n))
+
+    __rmul__ = __mul__
+
     def __eq__(self, other):
         if isinstance(other, Basic):
             return super(Tuple, self).__eq__(other)
@@ -80,6 +93,43 @@ class Tuple(Basic):
     def _to_mpmath(self, prec):
         return tuple([a._to_mpmath(prec) for a in self.args])
 
+    def __lt__(self, other):
+        return sympify(self.args < other.args)
+
+    def __le__(self, other):
+        return sympify(self.args <= other.args)
+
+    # XXX: Basic defines count() as something different, so we can't
+    # redefine it here. Originally this lead to cse() test failure.
+    def tuple_count(self, value):
+        """T.count(value) -> integer -- return number of occurrences of value"""
+        return self.args.count(value)
+
+    def index(self, value, start=None, stop=None):
+        """T.index(value, [start, [stop]]) -> integer -- return first index of value.
+           Raises ValueError if the value is not present."""
+        # XXX: One would expect:
+        #
+        # return self.args.index(value, start, stop)
+        #
+        # here. Any trouble with that? Yes:
+        #
+        # >>> (1,).index(1, None, None)
+        # Traceback (most recent call last):
+        #   File "<stdin>", line 1, in <module>
+        # TypeError: slice indices must be integers or None or have an __index__ method
+        #
+        # See: http://bugs.python.org/issue13340
+
+        if start is None and stop is None:
+            return self.args.index(value)
+        elif stop is None:
+            return self.args.index(value, start)
+        else:
+            return self.args.index(value, start, stop)
+
+converter[tuple] = lambda tup: Tuple(*tup)
+
 
 def tuple_wrapper(method):
     """
@@ -89,7 +139,7 @@ def tuple_wrapper(method):
     call a function with regular tuples in the argument, and the wrapper will
     convert them to Tuples before handing them to the function.
 
-    >>> from sympy.core.containers import tuple_wrapper, Tuple
+    >>> from sympy.core.containers import tuple_wrapper
     >>> def f(*args):
     ...    return args
     >>> g = tuple_wrapper(f)
@@ -101,7 +151,7 @@ def tuple_wrapper(method):
 
     """
     def wrap_tuples(*args, **kw_args):
-        newargs=[]
+        newargs = []
         for arg in args:
             if type(arg) is tuple:
                 newargs.append(Tuple(*arg))
@@ -110,26 +160,28 @@ def tuple_wrapper(method):
         return method(*newargs, **kw_args)
     return wrap_tuples
 
+
 class Dict(Basic):
     """
     Wrapper around the builtin dict object
 
-    The Tuple is a subclass of Basic, so that it works well in the
+    The Dict is a subclass of Basic, so that it works well in the
     SymPy framework.  Because it is immutable, it may be included
     in sets, but its values must all be given at instantiation and
     cannot be changed afterwards.  Otherwise it behaves identically
     to the Python dict.
 
-    >>> from sympy import S
     >>> from sympy.core.containers import Dict
 
-    >>> D = Dict({1:'one', 2:'two'})
-    >>> for key in D: print key, D[key]
+    >>> D = Dict({1: 'one', 2: 'two'})
+    >>> for key in D:
+    ...    if key == 1:
+    ...        print('%s %s' % (key, D[key]))
     1 one
-    2 two
 
     The args are sympified so the 1 and 2 are Integers and the values
-    are Symbols. Queries automatialy sympify args so the following work:
+    are Symbols. Queries automatically sympify args so the following work:
+
     >>> 1 in D
     True
     >>> D.has('one') # searches keys and values
@@ -142,14 +194,17 @@ class Dict(Basic):
     """
 
     def __new__(cls, *args):
-        if len(args)==1 and args[0].__class__ is dict:
-            items = [Tuple(k, v) for k, v in args[0].iteritems()]
+        if len(args) == 1 and ((args[0].__class__ is dict) or
+                             (args[0].__class__ is Dict)):
+            items = [Tuple(k, v) for k, v in args[0].items()]
         elif iterable(args) and all(len(arg) == 2 for arg in args):
             items = [Tuple(k, v) for k, v in args]
         else:
             raise TypeError('Pass Dict args as Dict((k1, v1), ...) or Dict({k1: v1, ...})')
-        obj = Basic.__new__(cls, *items)
-        obj._dict = dict(items) # In case Tuple decides it wants to sympify
+        elements = frozenset(items)
+        obj = Basic.__new__(cls, elements)
+        obj.elements = elements
+        obj._dict = dict(items)  # In case Tuple decides it wants to sympify
         return obj
 
     def __getitem__(self, key):
@@ -159,52 +214,42 @@ class Dict(Basic):
     def __setitem__(self, key, value):
         raise NotImplementedError("SymPy Dicts are Immutable")
 
+    @property
+    def args(self):
+        return tuple(self.elements)
+
     def items(self):
         '''D.items() -> list of D's (key, value) pairs, as 2-tuples'''
-        return Tuple(*self.args)
-
-    def iteritems(self):
-        '''D.iteritems() -> an iterator over the (key, value) items of D'''
-        return self.args.__iter__()
-
-    def iterkeys(self):
-        '''D.iterkeys() -> an iterator over the keys of D'''
-        return (k for k, v in self.iteritems())
+        return self._dict.items()
 
     def keys(self):
         '''D.keys() -> list of D's keys'''
-        return Tuple(*self.iterkeys())
-
-    def itervalues(self):
-        '''D.itervalues() -> an iterator over the values of D'''
-        return (v for k, v in self.iteritems())
+        return self._dict.keys()
 
     def values(self):
         '''D.values() -> list of D's values'''
-        return Tuple(*self.itervalues())
+        return self._dict.values()
 
     def __iter__(self):
         '''x.__iter__() <==> iter(x)'''
-        return self.iterkeys()
+        return iter(self._dict)
 
     def __len__(self):
         '''x.__len__() <==> len(x)'''
         return self._dict.__len__()
 
-    def __str__(self):
-        return str(self._dict)
-
-    def __repr__(self):
-        return self._dict.__repr__()
-
     def get(self, key, default=None):
         '''D.get(k[,d]) -> D[k] if k in D, else d.  d defaults to None.'''
         return self._dict.get(sympify(key), default)
 
-    def has_key(self, key):
-        '''D.has_key(k) -> True if D has a key k, else False'''
-        return self._dict.has_key(sympify(key))
-
     def __contains__(self, key):
         '''D.__contains__(k) -> True if D has a key k, else False'''
-        return self.has_key(sympify(key))
+        return sympify(key) in self._dict
+
+    def __lt__(self, other):
+        return sympify(self.args < other.args)
+
+    @property
+    def _sorted_args(self):
+        from sympy.utilities import default_sort_key
+        return tuple(sorted(self.args, key=default_sort_key))

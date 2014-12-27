@@ -6,7 +6,59 @@ NOTE
 at present this is mainly needed for facts.py , feel free however to improve
 this stuff for general purpose.
 """
-from sympy.core.compatibility import iterable, cmp
+from __future__ import print_function, division
+
+from sympy.core.compatibility import iterable
+
+
+def _fuzzy_group(args, quick_exit=False):
+    """Return True if all args are True, None if there is any None else False
+    unless ``quick_exit`` is True (then return None as soon as a second False
+    is seen.
+
+     ``_fuzzy_group`` is like ``fuzzy_and`` except that it is more
+    conservative in returning a False, waiting to make sure that all
+    arguments are True or False and returning None if any arguments are
+    None. It also has the capability of permiting only a single False and
+    returning None if more than one is seen. For example, the presence of a
+    single transcendental amongst rationals would indicate that the group is
+    no longer rational; but a second transcendental in the group would make the
+    determination impossible.
+
+
+    Examples
+    ========
+
+    >>> from sympy.core.logic import _fuzzy_group
+
+    By default, multiple Falses mean the group is broken:
+
+    >>> _fuzzy_group([False, False, True])
+    False
+
+    If multiple Falses mean the group status is unknown then set
+    `quick_exit` to True so None can be returned when the 2nd False is seen:
+
+    >>> _fuzzy_group([False, False, True], quick_exit=True)
+
+    But if only a single False is seen then the group is known to
+    be broken:
+
+    >>> _fuzzy_group([False, True, True], quick_exit=True)
+    False
+
+    """
+    saw_other = False
+    for a in args:
+        if a is True:
+            continue
+        if a is None:
+            return
+        if quick_exit and saw_other:
+            return
+        saw_other = True
+    return not saw_other
+
 
 def fuzzy_bool(x):
     """Return True, False or None according to x.
@@ -18,82 +70,102 @@ def fuzzy_bool(x):
         return None
     return bool(x)
 
-def fuzzy_and(*args):
+
+def fuzzy_and(args):
     """Return True (all True), False (any False) or None.
 
-    If `a` is an iterable it must have more than one element."""
+    Examples
+    ========
 
-    if (len(args) == 1 and iterable(args[0]) or
-        len(args) > 2):
-        if len(args) == 1:
-            args = args[0]
-        rv = True
-        i = 0
-        for ai in args:
-            ai = fuzzy_bool(ai)
-            if ai is False:
-                return False
-            if rv: # this will stop updating if a None is ever trapped
-                rv = ai
-            i += 1
-        if i < 2:
-            raise ValueError('iterables must have 2 or more elements')
-        return rv
+    >>> from sympy.core.logic import fuzzy_and
+    >>> from sympy import Dummy
 
-    a, b = [fuzzy_bool(i) for i in args]
-    if a is True and b is True:
-        return True
-    elif a is False or b is False:
-        return False
+    If you had a list of objects to test the commutivity of
+    and you want the fuzzy_and logic applied, passing an
+    iterator will allow the commutativity to only be computed
+    as many times as necessary. With this list, False can be
+    returned after analyzing the first symbol:
+
+    >>> syms = [Dummy(commutative=False), Dummy()]
+    >>> fuzzy_and(s.is_commutative for s in syms)
+    False
+
+    That False would require less work than if a list of pre-computed
+    items was sent:
+
+    >>> fuzzy_and([s.is_commutative for s in syms])
+    False
+    """
+
+    rv = True
+    for ai in args:
+        ai = fuzzy_bool(ai)
+        if ai is False:
+            return False
+        if rv:  # this will stop updating if a None is ever trapped
+            rv = ai
+    return rv
+
 
 def fuzzy_not(v):
-    """'not' in fuzzy logic"""
+    """
+    Not in fuzzy logic
+
+    Return None if `v` is None else `not v`.
+
+    Examples
+    ========
+
+    >>> from sympy.core.logic import fuzzy_not
+    >>> fuzzy_not(True)
+    False
+    >>> fuzzy_not(None)
+    >>> fuzzy_not(False)
+    True
+
+    """
     if v is None:
         return v
     else:
         return not v
 
 
-def name_not(k):
-    """negate a name
+def fuzzy_or(args):
+    """
+    Or in fuzzy logic. Returns True (any True), False (all False), or None
 
-       >>> from sympy.core.logic import name_not
-       >>> name_not('zero')
-       '!zero'
+    See the docstrings of fuzzy_and and fuzzy_not for more info.  fuzzy_or is
+    related to the two by the standard De Morgan's law.
 
-       >>> name_not('!zero')
-       'zero'
+    >>> from sympy.core.logic import fuzzy_or
+    >>> fuzzy_or([True, False])
+    True
+    >>> fuzzy_or([True, None])
+    True
+    >>> fuzzy_or([False, False])
+    False
+    >>> print(fuzzy_or([False, None]))
+    None
 
     """
-    if k[:1] != '!':
-        return '!'+k
-    else:
-        return k[1:]
+    return fuzzy_not(fuzzy_and(fuzzy_not(i) for i in args))
 
 
 class Logic(object):
     """Logical expression"""
-
-    __slots__ = ['args']
-
     # {} 'op' -> LogicClass
     op_2class = {}
 
-
-    def __new__(cls, args):
+    def __new__(cls, *args):
         obj = object.__new__(cls)
-        obj.args = tuple(args)
-
-        # XXX do we need this:
-        #print 'L: %s' % (obj.args,)
-        assert not isinstance(obj.args[0], tuple)
-
+        obj.args = args
         return obj
 
+    def __getnewargs__(self):
+        return self.args
 
     def __hash__(self):
-        return hash( (type(self).__name__, self.args) )
-
+        return hash( (type(self).__name__,) + tuple(self.args) )
 
     def __eq__(a, b):
         if not isinstance(b, type(a)):
@@ -107,69 +179,65 @@ class Logic(object):
         else:
             return a.args != b.args
 
-    def __lt__(cls, other):
-        if cls.__cmp__(other) == -1:
+    def __lt__(self, other):
+        if self.__cmp__(other) == -1:
             return True
         return False
 
-
-    def __cmp__(a, b):
-        if type(a) is not type(b):
-            return cmp( str(type(a)), str(type(b)) )
-
+    def __cmp__(self, other):
+        if type(self) is not type(other):
+            a = str(type(self))
+            b = str(type(other))
         else:
-            return cmp(a.args, b.args)
+            a = self.args
+            b = other.args
+        return (a > b) - (a < b)
 
     def __str__(self):
-        return '%s(%s)' % (self.op, ', '.join(str(a) for a in self.args))
+        return '%s(%s)' % (self.__class__.__name__, ', '.join(str(a) for a in self.args))
 
     __repr__ = __str__
 
     @staticmethod
     def fromstring(text):
-        """Logic from string
+        """Logic from string with space around & and | but none after !.
 
            e.g.
 
-           !a & !b | c
+           !a & b | c
         """
-        # XXX this is not general, but good enough
-        terms = text.split()
-
-        lexpr   = None  # current logical expression
+        lexpr = None  # current logical expression
         schedop = None  # scheduled operation
-
-        while True:
-            # pop next term and exit loop if there is no terms left
-            try:
-                term = terms.pop(0)
-            except IndexError:
-                break
-
+        for term in text.split():
             # operation symbol
             if term in '&|':
                 if schedop is not None:
-                    raise ValueError('double op forbidden: "%s %s"' % (term, schedop))
-
+                    raise ValueError(
+                        'double op forbidden: "%s %s"' % (term, schedop))
                 if lexpr is None:
-                    raise ValueError('%s cannot be in the beginning of expression' % term)
-
+                    raise ValueError(
+                        '%s cannot be in the beginning of expression' % term)
                 schedop = term
                 continue
-
+            if '&' in term or '|' in term:
+                raise ValueError('& and | must have space around them')
+            if term[0] == '!':
+                if len(term) == 1:
+                    raise ValueError('do not include space after "!"')
+                term = Not(term[1:])
 
             # already scheduled operation, e.g. '&'
             if schedop:
-                lexpr   = Logic.op_2class[schedop] ( *(lexpr, term) )
+                lexpr = Logic.op_2class[schedop](lexpr, term)
                 schedop = None
                 continue
 
             # this should be atom
             if lexpr is not None:
-                raise ValueError('missing op between "%s" and "%s"' % (lexpr, term))
+                raise ValueError(
+                    'missing op between "%s" and "%s"' % (lexpr, term))
 
             lexpr = term
-
 
         # let's check that we ended up in correct state
         if schedop is not None:
@@ -181,74 +249,29 @@ class Logic(object):
         return lexpr
 
 
-# XXX better name?
 class AndOr_Base(Logic):
 
-    __slots__ = []
-
     def __new__(cls, *args):
-        if len(args) == 0:
-            raise TypeError('%s requires at least one argument' % cls.__name__)
-
-        # process bool args early
         bargs = []
-
         for a in args:
-            # &(F, ...) -> F
-            # |(T, ...) -> T
             if a == cls.op_x_notx:
                 return a
-
-            # &(T, ...) -> &(...)
-            # |(F, ...) -> |(...)
             elif a == (not cls.op_x_notx):
                 continue    # skip this argument
-
-
             bargs.append(a)
 
+        args = sorted(set(cls.flatten(bargs)), key=hash)
 
-        args = bargs
-
-        # &(a, !a) -> F
-        # |(a, !a) -> T
-        # XXX suboptinal
         for a in args:
             if Not(a) in args:
                 return cls.op_x_notx
 
-        args = cls.flatten(args)
-
-        # canonicalize arguments
-        # XXX do we always need this?
-        # NB: this is needed to reduce number of &-nodes in beta-network
-        args = sorted(args, key=hash)
-
-        # now let's kill duplicate arguments, e.g. &(a,a,b) -> &(a,b)
-        prev = None
-        uargs= []
-        for a in args:
-            if a != prev:
-                uargs.append(a)
-                prev = a
-
-        args = uargs
-
-        # &(a) -> a
-        # |(a) -> a
         if len(args) == 1:
-            return args[0]
-
-        # when we are at this stage, it means that _all_ arguments were T/F and
-        # all arguments were accepted as "let's see what follows next", so at
-        # _this_ point the rule is:
-        # |()  -> F  (*not* T)
-        # &()  -> T  (*not* F)
+            return args.pop()
         elif len(args) == 0:
             return not cls.op_x_notx
 
-        return Logic.__new__(cls, args)
-
+        return Logic.__new__(cls, *args)
 
     @classmethod
     def flatten(cls, args):
@@ -257,37 +280,26 @@ class AndOr_Base(Logic):
         res = []
 
         while True:
-
             try:
                 arg = args_queue.pop(0)
             except IndexError:
                 break
-
             if isinstance(arg, Logic):
-                if arg.op == cls.op:
-                    #print 'flattening...', fargs, i, arg.args
-                    args_queue.extend( arg.args )
+                if isinstance(arg, cls):
+                    args_queue.extend(arg.args)
                     continue
-
-
-            # another op -- leave it as is
-            res.append( arg )
+            res.append(arg)
 
         args = tuple(res)
         return args
 
-expand_lvl=0
 
 class And(AndOr_Base):
-    op = '&'
     op_x_notx = False
-
-    __slots__ = []
 
     def _eval_propagate_not(self):
         # !(a&b&c ...) == !a | !b | !c ...
         return Or( *[Not(a) for a in self.args] )
-
 
     # (a|b|...) & c == (a&c) | (b&c) | ...
     def expand(self):
@@ -296,7 +308,7 @@ class And(AndOr_Base):
         for i in range(len(self.args)):
             arg = self.args[i]
             if isinstance(arg, Or):
-                arest = self.args[:i] + self.args[i+1:]
+                arest = self.args[:i] + self.args[i + 1:]
 
                 orterms = [And( *(arest + (a,)) ) for a in arg.args]
                 for j in range(len(orterms)):
@@ -309,55 +321,37 @@ class And(AndOr_Base):
         else:
             return self
 
-    def dbg_expand(self):
-        global expand_lvl
-        print '%sexpand %s' % (' '*expand_lvl, self)
-
-        expand_lvl += 1
-        try:
-            return self.old_expand()
-        finally:
-            expand_lvl -= 1
-
-
-    #old_expand = expand
-    #expand = dbg_expand
 
 class Or(AndOr_Base):
-    op = '|'
     op_x_notx = True
-
-    __slots__ = []
 
     def _eval_propagate_not(self):
         # !(a|b|c ...) == !a & !b & !c ...
         return And( *[Not(a) for a in self.args] )
 
-class Not(Logic):
-    op = '!'
 
-    __slots__ = []
+class Not(Logic):
 
     def __new__(cls, arg):
         if isinstance(arg, str):
-            return name_not(arg)
+            return Logic.__new__(cls, arg)
 
         elif isinstance(arg, bool):
             return not arg
+        elif isinstance(arg, Not):
+            return arg.args[0]
 
         elif isinstance(arg, Logic):
             # XXX this is a hack to expand right from the beginning
             arg = arg._eval_propagate_not()
             return arg
 
-            obj = Logic.__new__(cls, (arg,))
-            return obj
-
         else:
             raise ValueError('Not: unknown argument %r' % (arg,))
 
-
-
+    @property
+    def arg(self):
+        return self.args[0]
 
 
 Logic.op_2class['&'] = And

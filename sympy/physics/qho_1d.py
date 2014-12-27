@@ -1,6 +1,9 @@
+from __future__ import print_function, division
+
 from sympy.core import S, pi, Rational
 from sympy.functions import hermite, sqrt, exp, factorial
 from sympy.physics.quantum.constants import hbar
+
 
 def psi_n(n, x, m, omega):
     """
@@ -16,7 +19,8 @@ def psi_n(n, x, m, omega):
     ``omega``
         angular frequency of the oscillator
 
-    :Example:
+    Examples
+    ========
 
     >>> from sympy.physics.qho_1d import psi_n
     >>> from sympy import var
@@ -31,12 +35,12 @@ def psi_n(n, x, m, omega):
     n, x, m, omega = map(S, [n, x, m, omega])
     nu = m * omega / hbar
     # normalization coefficient
-    C =  (nu/pi)**(S(1)/4) * sqrt(1/(2**n*factorial(n)))
+    C = (nu/pi)**(S(1)/4) * sqrt(1/(2**n*factorial(n)))
 
-    return  C * exp(-nu* x**2 /2) * hermite(n, sqrt(nu)*x)
+    return C * exp(-nu* x**2 /2) * hermite(n, sqrt(nu)*x)
 
 
-def E_n(n,omega):
+def E_n(n, omega):
     """
     Returns the Energy of the One-dimensional harmonic oscillator
 
@@ -49,6 +53,16 @@ def E_n(n,omega):
     calculated as:
 
         E_n = hbar * omega*(n + 1/2)
+
+    Examples
+    ========
+
+    >>> from sympy.physics.qho_1d import E_n
+    >>> from sympy import var
+    >>> var("x omega")
+    (x, omega)
+    >>> E_n(x, omega)
+    hbar*omega*(x + 1/2)
     """
 
-    return hbar * omega*(n + Rational(1,2))
+    return hbar * omega*(n + Rational(1, 2))

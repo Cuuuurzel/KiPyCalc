@@ -508,7 +508,8 @@ def polyexp(ctx, s, z):
 @defun_wrapped
 def cyclotomic(ctx, n, z):
     n = int(n)
-    assert n >= 0
+    if n < 0:
+        raise ValueError("n cannot be negative")
     p = ctx.one
     if n == 0:
         return p
@@ -555,7 +556,7 @@ def mangoldt(ctx, n):
 
     **Examples**
 
-        >>> from mpmath import *
+        >>> from sympy.mpmath import *
         >>> mp.dps = 25; mp.pretty = True
         >>> [mangoldt(n) for n in range(-2,3)]
         [0.0, 0.0, 0.0, 0.0, 0.6931471805599453094172321]
@@ -606,3 +607,19 @@ def mangoldt(ctx, n):
             if ctx.isprime(p):
                 return ctx.ln(p)
         k += 1
+
+@defun
+def stirling1(ctx, n, k, exact=False):
+    v = ctx._stirling1(int(n), int(k))
+    if exact:
+        return int(v)
+    else:
+        return ctx.mpf(v)
+
+@defun
+def stirling2(ctx, n, k, exact=False):
+    v = ctx._stirling2(int(n), int(k))
+    if exact:
+        return int(v)
+    else:
+        return ctx.mpf(v)

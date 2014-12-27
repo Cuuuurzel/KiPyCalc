@@ -1,8 +1,11 @@
 """Singleton mechanism"""
 
-from core import Registry
-from assumptions import WithAssumptions
-from sympify import sympify
+from __future__ import print_function, division
+
+from .core import Registry
+from .assumptions import ManagedProperties
+from .sympify import sympify
+
 
 class SingletonRegistry(Registry):
     """
@@ -19,7 +22,7 @@ class SingletonRegistry(Registry):
 S = SingletonRegistry()
 
 
-class Singleton(WithAssumptions):
+class Singleton(ManagedProperties):
     """
     Metaclass for singleton classes.
 
@@ -27,11 +30,14 @@ class Singleton(WithAssumptions):
     class is instantiated. Additionally, this instance can be accessed through
     the global registry object S as S.<class_name>.
 
-    Example::
+    Examples
+    ========
+
         >>> from sympy import S, Basic
         >>> from sympy.core.singleton import Singleton
-        >>> class MySingleton(Basic):
-        ...     __metaclass__ = Singleton
+        >>> from sympy.core.compatibility import with_metaclass
+        >>> class MySingleton(with_metaclass(Singleton, Basic)):
+        ...     pass
         >>> Basic() is Basic()
         False
         >>> MySingleton() is MySingleton()
@@ -40,7 +46,7 @@ class Singleton(WithAssumptions):
         True
 
     ** Developer notes **
-        The class is instanciated immediately at the point where it is defined
+        The class is instantiated immediately at the point where it is defined
         by calling cls.__new__(cls). This instance is cached and cls.__new__ is
         rebound to return it directly.
 

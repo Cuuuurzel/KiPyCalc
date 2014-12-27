@@ -50,7 +50,7 @@ formula can not compute to the wanted precision.
 
 import math
 
-class RSCache:
+class RSCache(object):
      def __init__(ctx):
         ctx._rs_cache = [0, 10, {}, {}]
 
@@ -1403,4 +1403,3 @@ def rs_z(ctx, w, derivative=0):
         return z_half(ctx, w, derivative)
     else:
         return z_offline(ctx, w, derivative)
-

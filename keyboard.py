@@ -8,6 +8,18 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
 from kivyextras import *
+"""
+from jnius import autoclass, cast
+
+#Get Context, URI and Intent class from android SDK
+try :
+	context = autoclass('org.renpy.android.PythonActivity').mActivity    
+	Uri = autoclass('android.net.Uri')
+	Intent = autoclass('android.content.Intent')
+#Something wrong, or not using android
+except : pass
+#
+"""
 
 FONT_NAME = "res/ubuntu-font-family-0.80/UbuntuMono-R.ttf"
 FONT_SIZE = getFontSize()
@@ -76,7 +88,23 @@ class KiPyKeyboard( BoxLayout ) :
 		self.onShift()
 
 	def saveHtml( self ) :
-		self.parent.parent.saveHtml()
+		url = self.parent.parent.saveHtml()
+		url = "sdcard/org.cuuuurzel.KiPyCalc/" + url
+		try :
+			self.openUrl( url )
+		#Something wrong, or not using android
+		except : pass
+
+	def openUrl( self, url ) :
+		pass
+		"""
+		#Open a webpage in the default Android browser.
+		intent = Intent()
+		intent.setAction(Intent.ACTION_VIEW)
+		intent.setData(Uri.parse(url))
+		currentActivity = cast('android.app.Activity', context)
+		currentActivity.startActivity(intent)
+		"""
 
 	def loadStaticKeys( self ) :
 		k1 = "<- space tab \\n ->".split( " " )

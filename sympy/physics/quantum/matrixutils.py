@@ -1,7 +1,9 @@
 """Utilities to deal with sympy.Matrix, numpy and scipy.sparse."""
 
+from __future__ import print_function, division
+
 from sympy import Matrix, I, Expr, Integer
-from sympy.matrices import matrices
+from sympy.matrices import eye, zeros
 from sympy.external import import_module
 
 __all__ = [
@@ -16,20 +18,21 @@ __all__ = [
     'to_sympy',
     'to_numpy',
     'to_scipy_sparse',
-    'matrix_tensor_product'
+    'matrix_tensor_product',
+    'matrix_zeros'
 ]
 
 # Conditionally define the base classes for numpy and scipy.sparse arrays
 # for use in isinstance tests.
 
-np = import_module('numpy', min_python_version=(2, 6))
+np = import_module('numpy')
 if not np:
     class numpy_ndarray(object):
         pass
 else:
     numpy_ndarray = np.ndarray
 
-scipy = import_module('scipy', __import__kwargs={'fromlist':['sparse']})
+scipy = import_module('scipy', __import__kwargs={'fromlist': ['sparse']})
 if not scipy:
     class scipy_sparse_matrix(object):
         pass
@@ -49,7 +52,7 @@ def sympy_to_numpy(m, **options):
     """Convert a sympy Matrix/complex number to a numpy matrix or scalar."""
     if not np:
         raise ImportError
-    dtype = options.get('dtype','complex')
+    dtype = options.get('dtype', 'complex')
     if isinstance(m, Matrix):
         return np.matrix(m.tolist(), dtype=dtype)
     elif isinstance(m, Expr):
@@ -62,7 +65,7 @@ def sympy_to_scipy_sparse(m, **options):
     """Convert a sympy Matrix/complex number to a numpy matrix or scalar."""
     if not np or not sparse:
         raise ImportError
-    dtype = options.get('dtype','complex')
+    dtype = options.get('dtype', 'complex')
     if isinstance(m, Matrix):
         return sparse.csr_matrix(np.matrix(m.tolist(), dtype=dtype))
     elif isinstance(m, Expr):
@@ -93,9 +96,10 @@ def to_sympy(m, **options):
         return m
     raise TypeError('Expected sympy/numpy/scipy.sparse matrix, got: %r' % m)
 
+
 def to_numpy(m, **options):
     """Convert a sympy/scipy.sparse matrix to a numpy matrix."""
-    dtype = options.get('dtype','complex')
+    dtype = options.get('dtype', 'complex')
     if isinstance(m, (Matrix, Expr)):
         return sympy_to_numpy(m, dtype=dtype)
     elif isinstance(m, numpy_ndarray):
@@ -107,8 +111,8 @@ def to_numpy(m, **options):
 
 def to_scipy_sparse(m, **options):
     """Convert a sympy/numpy matrix to a scipy.sparse matrix."""
-    dtype = options.get('dtype','complex')
-    if isinstance(m,  (Matrix, Expr)):
+    dtype = options.get('dtype', 'complex')
+    if isinstance(m, (Matrix, Expr)):
         return sympy_to_scipy_sparse(m, dtype=dtype)
     elif isinstance(m, numpy_ndarray):
         if not sparse:
@@ -122,11 +126,11 @@ def to_scipy_sparse(m, **options):
 def flatten_scalar(e):
     """Flatten a 1x1 matrix to a scalar, return larger matrices unchanged."""
     if isinstance(e, Matrix):
-        if e.shape == (1,1):
+        if e.shape == (1, 1):
             e = e[0]
     if isinstance(e, (numpy_ndarray, scipy_sparse_matrix)):
-        if e.shape == (1,1):
-            e = complex(e[0,0])
+        if e.shape == (1, 1):
+            e = complex(e[0, 0])
     return e
 
 
@@ -147,32 +151,36 @@ def _sympy_tensor_product(*matrices):
 
     Parameters
     ==========
+
     matrices : tuple of Matrix instances
         The matrices to take the tensor product of.
 
     Returns
     =======
+
     matrix : Matrix
         The tensor product matrix.
 
     Examples
     ========
 
-        >>> from sympy import I, Matrix, symbols
-        >>> from sympy.physics.quantum.matrixutils import _sympy_tensor_product
+    >>> from sympy import I, Matrix, symbols
+    >>> from sympy.physics.quantum.matrixutils import _sympy_tensor_product
 
-        >>> m1 = Matrix([[1,2],[3,4]])
-        >>> m2 = Matrix([[1,0],[0,1]])
-        >>> _sympy_tensor_product(m1, m2)
-        [1, 0, 2, 0]
-        [0, 1, 0, 2]
-        [3, 0, 4, 0]
-        [0, 3, 0, 4]
-        >>> _sympy_tensor_product(m2, m1)
-        [1, 2, 0, 0]
-        [3, 4, 0, 0]
-        [0, 0, 1, 2]
-        [0, 0, 3, 4]
+    >>> m1 = Matrix([[1,2],[3,4]])
+    >>> m2 = Matrix([[1,0],[0,1]])
+    >>> _sympy_tensor_product(m1, m2)
+    Matrix([
+    [1, 0, 2, 0],
+    [0, 1, 0, 2],
+    [3, 0, 4, 0],
+    [0, 3, 0, 4]])
+    >>> _sympy_tensor_product(m2, m1)
+    Matrix([
+    [1, 2, 0, 0],
+    [3, 4, 0, 0],
+    [0, 0, 1, 2],
+    [0, 0, 3, 4]])
 
     References
     ==========
@@ -180,14 +188,13 @@ def _sympy_tensor_product(*matrices):
     [1] http://en.wikipedia.org/wiki/Kronecker_product
     """
     # Make sure we have a sequence of Matrices
-    testmat = [isinstance(m, Matrix) for m in matrices]
-    if not all(testmat):
+    if not all(isinstance(m, Matrix) for m in matrices):
         raise TypeError(
             'Sequence of Matrices expected, got: %s' % repr(matrices)
         )
 
     # Pull out the first element in the product.
-    matrix_expansion  = matrices[-1]
+    matrix_expansion = matrices[-1]
     # Do the tensor product working from right to left.
     for mat in reversed(matrices[:-1]):
         rows = mat.rows
@@ -197,9 +204,9 @@ def _sympy_tensor_product(*matrices):
         for i in range(rows):
             start = matrix_expansion*mat[i*cols]
             # Go through each column joining each item
-            for j in range(cols-1):
+            for j in range(cols - 1):
                 start = start.row_join(
-                    matrix_expansion*mat[i*cols+j+1]
+                    matrix_expansion*mat[i*cols + j + 1]
                 )
             # If this is the first element, make it the start of the
             # new row.
@@ -259,14 +266,48 @@ def _scipy_sparse_eye(n):
 
 def matrix_eye(n, **options):
     """Get the version of eye and tensor_product for a given format."""
-    format = options.get('format','sympy')
+    format = options.get('format', 'sympy')
     if format == 'sympy':
-        return matrices.eye(n)
+        return eye(n)
     elif format == 'numpy':
         return _numpy_eye(n)
     elif format == 'scipy.sparse':
         return _scipy_sparse_eye(n)
     raise NotImplementedError('Invalid format: %r' % format)
+
+
+def _numpy_zeros(m, n, **options):
+    """numpy verson of zeros."""
+    dtype = options.get('dtype', 'float64')
+    if not np:
+        raise ImportError
+    return np.zeros((m, n), dtype=dtype)
+
+
+def _scipy_sparse_zeros(m, n, **options):
+    """scipy.sparse verson of zeros."""
+    spmatrix = options.get('spmatrix', 'csr')
+    dtype = options.get('dtype', 'float64')
+    if not sparse:
+        raise ImportError
+    if spmatrix == 'lil':
+        return sparse.lil_matrix((m, n), dtype=dtype)
+    elif spmatrix == 'csr':
+        return sparse.csr_matrix((m, n), dtype=dtype)
+
+
+def matrix_zeros(m, n, **options):
+    """"Get a zeros matrix for a given format."""
+    format = options.get('format', 'sympy')
+    dtype = options.get('dtype', 'float64')
+    spmatrix = options.get('spmatrix', 'csr')
+    if format == 'sympy':
+        return zeros(m, n)
+    elif format == 'numpy':
+        return _numpy_zeros(m, n, **options)
+    elif format == 'scipy.sparse':
+        return _scipy_sparse_zeros(m, n, **options)
+    raise NotImplementedError('Invaild format: %r' % format)
 
 
 def _numpy_matrix_to_zero(e):
@@ -295,7 +336,7 @@ def _scipy_sparse_matrix_to_zero(e):
 def matrix_to_zero(e):
     """Convert a zero matrix to the scalar zero."""
     if isinstance(e, Matrix):
-        if matrices.zeros(*e.shape) == e:
+        if zeros(*e.shape) == e:
             e = Integer(0)
     elif isinstance(e, numpy_ndarray):
         e = _numpy_matrix_to_zero(e)

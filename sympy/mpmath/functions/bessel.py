@@ -616,8 +616,10 @@ def _airy_zero(ctx, which, k, derivative, complex=False):
     def U(t): return t**(2/3.)*(1-7/(t**2*48))
     def T(t): return t**(2/3.)*(1+5/(t**2*48))
     k = int(k)
-    assert k >= 1
-    assert derivative in (0,1)
+    if k < 1:
+        raise ValueError("k cannot be less than 1")
+    if not derivative in (0,1):
+        raise ValueError("Derivative should lie between 0 and 1")
     if which == 0:
         if derivative:
             return ctx.findroot(lambda z: ctx.airyai(z,1),
@@ -830,7 +832,8 @@ def generalized_bisection(ctx,f,a,b,n):
 
     TODO: this can be optimized, e.g. by reusing evaluation points.
     """
-    assert n >= 1
+    if n < 1:
+        raise ValueError("n cannot be less than 1")
     N = n+1
     points = []
     signs = []
@@ -854,9 +857,12 @@ def bessel_zero(ctx, kind, prime, v, m, isoltol=0.01, _interval_cache={}):
         v = ctx.mpf(v)
         m = int(m)
         prime = int(prime)
-        assert v >= 0
-        assert m >= 1
-        assert prime in (0,1)
+        if v < 0:
+            raise ValueError("v cannot be negative")
+        if m < 1:
+            raise ValueError("m cannot be less than 1")
+        if not prime in (0,1):
+            raise ValueError("prime should lie between 0 and 1")
         if kind == 1:
             if prime: f = lambda x: ctx.besselj(v,x,derivative=1)
             else:     f = lambda x: ctx.besselj(v,x)
@@ -924,7 +930,7 @@ def besseljzero(ctx, v, m, derivative=0):
 
     Initial zeros of the Bessel functions `J_0(z), J_1(z), J_2(z)`::
 
-        >>> from mpmath import *
+        >>> from sympy.mpmath import *
         >>> mp.dps = 25; mp.pretty = True
         >>> besseljzero(0,1); besseljzero(0,2); besseljzero(0,3)
         2.404825557695772768621632
@@ -1031,7 +1037,7 @@ def besselyzero(ctx, v, m, derivative=0):
 
     Initial zeros of the Bessel functions `Y_0(z), Y_1(z), Y_2(z)`::
 
-        >>> from mpmath import *
+        >>> from sympy.mpmath import *
         >>> mp.dps = 25; mp.pretty = True
         >>> besselyzero(0,1); besselyzero(0,2); besselyzero(0,3)
         0.8935769662791675215848871

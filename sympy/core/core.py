@@ -1,45 +1,46 @@
 """ The core's core. """
-from sympy.core.compatibility import cmp
+from __future__ import print_function, division
 
 # used for canonical ordering of symbolic sequences
 # via __cmp__ method:
 # FIXME this is *so* irrelevant and outdated!
 ordering_of_classes = [
     # singleton numbers
-    'Zero', 'One','Half','Infinity','NaN','NegativeOne','NegativeInfinity',
+    'Zero', 'One', 'Half', 'Infinity', 'NaN', 'NegativeOne', 'NegativeInfinity',
     # numbers
-    'Integer','Rational','Float',
+    'Integer', 'Rational', 'Float',
     # singleton symbols
-    'Exp1','Pi','ImaginaryUnit',
+    'Exp1', 'Pi', 'ImaginaryUnit',
     # symbols
-    'Symbol','Wild','Temporary',
+    'Symbol', 'Wild', 'Temporary',
     # arithmetic operations
     'Pow', 'Mul', 'Add',
     # function values
-    'Derivative','Integral',
+    'Derivative', 'Integral',
     # defined singleton functions
-    'Abs','Sign','Sqrt',
+    'Abs', 'Sign', 'Sqrt',
     'Floor', 'Ceiling',
     'Re', 'Im', 'Arg',
     'Conjugate',
-    'Exp','Log',
-    'Sin','Cos','Tan','Cot','ASin','ACos','ATan','ACot',
-    'Sinh','Cosh','Tanh','Coth','ASinh','ACosh','ATanh','ACoth',
-    'RisingFactorial','FallingFactorial',
-    'factorial','binomial',
-    'Gamma','LowerGamma','UpperGamma','PolyGamma',
+    'Exp', 'Log',
+    'Sin', 'Cos', 'Tan', 'Cot', 'ASin', 'ACos', 'ATan', 'ACot',
+    'Sinh', 'Cosh', 'Tanh', 'Coth', 'ASinh', 'ACosh', 'ATanh', 'ACoth',
+    'RisingFactorial', 'FallingFactorial',
+    'factorial', 'binomial',
+    'Gamma', 'LowerGamma', 'UpperGamma', 'PolyGamma',
     'Erf',
     # special polynomials
-    'Chebyshev','Chebyshev2',
+    'Chebyshev', 'Chebyshev2',
     # undefined functions
-    'Function','WildFunction',
+    'Function', 'WildFunction',
     # anonymous functions
     'Lambda',
     # Landau O symbol
     'Order',
     # relational operations
-    'Equality', 'Unequality', 'StrictInequality', 'Inequality',
-    ]
+    'Equality', 'Unequality', 'StrictGreaterThan', 'StrictLessThan',
+    'GreaterThan', 'LessThan',
+]
 
 
 class BasicType(type):
@@ -67,6 +68,7 @@ class Registry(object):
 #A set containing all sympy class objects, kept in sync with C
 all_classes = set()
 
+
 class ClassRegistry(Registry):
     """
     Namespace for SymPy classes
@@ -93,6 +95,7 @@ class ClassRegistry(Registry):
 
 C = ClassRegistry()
 
+
 class BasicMeta(BasicType):
 
     def __init__(cls, *args, **kws):
@@ -105,8 +108,7 @@ class BasicMeta(BasicType):
             return -1
         n1 = cls.__name__
         n2 = other.__name__
-        c = cmp(n1, n2)
-        if not c:
+        if n1 == n2:
             return 0
 
         UNKNOWN = len(ordering_of_classes) + 1
@@ -119,8 +121,8 @@ class BasicMeta(BasicType):
         except ValueError:
             i2 = UNKNOWN
         if i1 == UNKNOWN and i2 == UNKNOWN:
-            return c
-        return cmp(i1, i2)
+            return (n1 > n2) - (n1 < n2)
+        return (i1 > i2) - (i1 < i2)
 
     def __lt__(cls, other):
         if cls.__cmp__(other) == -1:

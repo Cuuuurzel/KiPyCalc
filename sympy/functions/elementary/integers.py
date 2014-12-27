@@ -1,23 +1,29 @@
+from __future__ import print_function, division
+
 from sympy.core.basic import C
 from sympy.core.singleton import S
 from sympy.core.function import Function
 from sympy.core import Add
 from sympy.core.evalf import get_integer_part, PrecisionExhausted
+from sympy.core.relational import Gt, Lt, Ge, Le, Eq
 
 ###############################################################################
 ######################### FLOOR and CEILING FUNCTIONS #########################
 ###############################################################################
 
-class RoundFunction(Function):
 
-    nargs = 1
+class RoundFunction(Function):
+    """The base class for rounding functions."""
 
     @classmethod
     def eval(cls, arg):
         if arg.is_integer:
             return arg
-        if arg.is_imaginary:
-            return cls(C.im(arg))*S.ImaginaryUnit
+        if arg.is_imaginary or (S.ImaginaryUnit*arg).is_real:
+            i = C.im(arg)
+            if not i.has(S.ImaginaryUnit):
+                return cls(i)*S.ImaginaryUnit
+            return cls(arg, evaluate=False)
 
         v = cls._eval_number(arg)
         if v is not None:
@@ -41,32 +47,35 @@ class RoundFunction(Function):
             return ipart
 
         # Evaluate npart numerically if independent of spart
-        orthogonal = (npart.is_real and spart.is_imaginary) or \
-            (npart.is_imaginary and spart.is_real)
-        if npart and ((not spart) or orthogonal):
+        if npart and (
+            not spart or
+            npart.is_real and (spart.is_imaginary or (S.ImaginaryUnit*spart).is_real) or
+                npart.is_imaginary and spart.is_real):
             try:
-                re, im = get_integer_part(npart, cls._dir, {}, return_ints=True)
+                re, im = get_integer_part(
+                    npart, cls._dir, {}, return_ints=True)
                 ipart += C.Integer(re) + C.Integer(im)*S.ImaginaryUnit
                 npart = S.Zero
             except (PrecisionExhausted, NotImplementedError):
                 pass
 
-        spart = npart + spart
+        spart += npart
         if not spart:
             return ipart
-        elif spart.is_imaginary:
+        elif spart.is_imaginary or (S.ImaginaryUnit*spart).is_real:
             return ipart + cls(C.im(spart), evaluate=False)*S.ImaginaryUnit
         else:
             return ipart + cls(spart, evaluate=False)
 
-    def _eval_is_bounded(self):
-        return self.args[0].is_bounded
+    def _eval_is_finite(self):
+        return self.args[0].is_finite
 
     def _eval_is_real(self):
         return self.args[0].is_real
 
     def _eval_is_integer(self):
         return self.args[0].is_real
+
 
 class floor(RoundFunction):
     """
@@ -89,6 +98,10 @@ class floor(RoundFunction):
         >>> floor(-I/2)
         -I
 
+    See Also
+    ========
+
+    ceiling
     """
     _dir = -1
 
@@ -96,11 +109,11 @@ class floor(RoundFunction):
     def _eval_number(cls, arg):
         if arg.is_Number:
             if arg.is_Rational:
-                if not arg.q:
-                    return arg
                 return C.Integer(arg.p // arg.q)
             elif arg.is_Float:
                 return C.Integer(int(arg.floor()))
+            else:
+                return arg
         if arg.is_NumberSymbol:
             return arg.approximation_interval(C.Integer)[0]
 
@@ -113,9 +126,20 @@ class floor(RoundFunction):
             if direction.is_positive:
                 return r
             else:
-                return r-1
+                return r - 1
         else:
             return r
+
+    def __le__(self, other):
+        if self.args[0] == other and other.is_real:
+            return S.true
+        return Le(self, other, evaluate=False)
+
+    def __gt__(self, other):
+        if self.args[0] == other and other.is_real:
+            return S.false
+        return Gt(self, other, evaluate=False)
+
 
 class ceiling(RoundFunction):
     """
@@ -138,6 +162,10 @@ class ceiling(RoundFunction):
         >>> ceiling(I/2)
         I
 
+    See Also
+    ========
+
+    floor
     """
     _dir = 1
 
@@ -145,11 +173,11 @@ class ceiling(RoundFunction):
     def _eval_number(cls, arg):
         if arg.is_Number:
             if arg.is_Rational:
-                if not arg.q:
-                    return arg
                 return -C.Integer(-arg.p // arg.q)
             elif arg.is_Float:
                 return C.Integer(int(arg.ceiling()))
+            else:
+                return arg
         if arg.is_NumberSymbol:
             return arg.approximation_interval(C.Integer)[1]
 
@@ -165,3 +193,13 @@ class ceiling(RoundFunction):
                 return r
         else:
             return r
+
+    def __lt__(self, other):
+        if self.args[0] == other and other.is_real:
+            return S.false
+        return Lt(self, other, evaluate=False)
+
+    def __ge__(self, other):
+        if self.args[0] == other and other.is_real:
+            return S.true
+        return Ge(self, other, evaluate=False)

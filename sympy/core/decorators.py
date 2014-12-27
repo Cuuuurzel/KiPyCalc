@@ -4,32 +4,29 @@ SymPy core decorators.
 The purpose of this module is to expose decorators without any other
 dependencies, so that they can be easily imported anywhere in sympy/core.
 """
-from sympify import SympifyError, sympify
-import warnings
 
-try:
-    from functools import wraps
-except ImportError:
-    def wraps(old_func):
-        """Copy private data from ``old_func`` to ``new_func``. """
-        def decorate(new_func):
-            new_func.__dict__.update(old_func.__dict__)
-            new_func.__module__ = old_func.__module__
-            new_func.__name__   = old_func.__name__
-            new_func.__doc__    = old_func.__doc__
-            return new_func
-        return decorate
+from __future__ import print_function, division
 
-def deprecated(func):
+from functools import wraps
+from .sympify import SympifyError, sympify
+from sympy.core.compatibility import get_function_code
+
+
+def deprecated(**decorator_kwargs):
     """This is a decorator which can be used to mark functions
     as deprecated. It will result in a warning being emitted
     when the function is used."""
-    @wraps(func)
-    def new_func(*args, **kwargs):
-        warnings.warn("Call to deprecated function %s." % func.__name__,
-                      category=DeprecationWarning)
-        return func(*args, **kwargs)
-    return new_func
+
+    def deprecated_decorator(func):
+        @wraps(func)
+        def new_func(*args, **kwargs):
+            from sympy.utilities.exceptions import SymPyDeprecationWarning
+            decorator_kwargs.setdefault('feature', func.__name__)
+            SymPyDeprecationWarning(**decorator_kwargs).warn(stacklevel=3)
+            return func(*args, **kwargs)
+        return new_func
+    return deprecated_decorator
+
 
 def _sympifyit(arg, retval=None):
     """decorator to smartly _sympify function arguments
@@ -52,6 +49,7 @@ def _sympifyit(arg, retval=None):
 
     return deco
 
+
 def __sympifyit(func, arg, retval=None):
     """decorator to _sympify `arg` argument for function `func`
 
@@ -59,10 +57,10 @@ def __sympifyit(func, arg, retval=None):
     """
 
     # we support f(a,b) only
-    assert func.func_code.co_argcount
+    if not get_function_code(func).co_argcount:
+        raise LookupError("func not found")
     # only b is _sympified
-    assert func.func_code.co_varnames[1] == arg
-
+    assert get_function_code(func).co_varnames[1] == arg
     if retval is None:
         @wraps(func)
         def __sympifyit_wrapper(a, b):
@@ -72,7 +70,11 @@ def __sympifyit(func, arg, retval=None):
         @wraps(func)
         def __sympifyit_wrapper(a, b):
             try:
-                return func(a, sympify(b, strict=True))
+                # If an external class has _op_priority, it knows how to deal
+                # with sympy objects. Otherwise, it must be converted.
+                if not hasattr(b, '_op_priority'):
+                    b = sympify(b, strict=True)
+                return func(a, b)
             except SympifyError:
                 return retval
 
@@ -103,6 +105,7 @@ def call_highest_priority(method_name):
         ...
     """
     def priority_decorator(func):
+        @wraps(func)
         def binary_op_wrapper(self, other):
             if hasattr(other, '_op_priority'):
                 if other._op_priority > self._op_priority:
@@ -115,4 +118,3 @@ def call_highest_priority(method_name):
             return func(self, other)
         return binary_op_wrapper
     return priority_decorator
-

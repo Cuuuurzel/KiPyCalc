@@ -7,17 +7,19 @@ References:
   - http://en.wikipedia.org/wiki/DPLL_algorithm
   - http://bioinformatics.louisville.edu/ouyang/MingOuyangThesis.pdf
 """
-from sympy.core import Symbol
-from sympy import Predicate
+from __future__ import print_function, division
+
+from sympy import default_sort_key
 from sympy.logic.boolalg import Or, Not, conjuncts, disjuncts, to_cnf, \
-    to_int_repr
+    to_int_repr, _find_predicates
 from sympy.logic.inference import pl_true, literal_symbol
+
 
 def dpll_satisfiable(expr):
     """
     Check satisfiability of a propositional sentence.
     It returns a model rather than True when it succeeds
-    >>> from sympy import symbols
+
     >>> from sympy.abc import A, B
     >>> from sympy.logic.algorithms.dpll import dpll_satisfiable
     >>> dpll_satisfiable(A & ~B)
@@ -26,17 +28,20 @@ def dpll_satisfiable(expr):
     False
 
     """
-    symbols = list(expr.atoms(Symbol, Predicate))
-    symbols_int_repr = set(range(1, len(symbols) + 1))
     clauses = conjuncts(to_cnf(expr))
+    if False in clauses:
+        return False
+    symbols = sorted(_find_predicates(expr), key=default_sort_key)
+    symbols_int_repr = set(range(1, len(symbols) + 1))
     clauses_int_repr = to_int_repr(clauses, symbols)
     result = dpll_int_repr(clauses_int_repr, symbols_int_repr, {})
     if not result:
         return result
     output = {}
     for key in result:
-        output.update({symbols[key-1]: result[key]})
+        output.update({symbols[key - 1]: result[key]})
     return output
+
 
 def dpll(clauses, symbols, model):
     """
@@ -54,27 +59,30 @@ def dpll(clauses, symbols, model):
     while P:
         model.update({P: value})
         symbols.remove(P)
-        if not value: P = ~P
+        if not value:
+            P = ~P
         clauses = unit_propagate(clauses, P)
         P, value = find_unit_clause(clauses, model)
     P, value = find_pure_symbol(symbols, clauses)
     while P:
         model.update({P: value})
         symbols.remove(P)
-        if not value: P = ~P
+        if not value:
+            P = ~P
         clauses = unit_propagate(clauses, P)
         P, value = find_pure_symbol(symbols, clauses)
     # end DP kernel
     unknown_clauses = []
     for c in clauses:
-        val =  pl_true(c, model)
-        if val == False:
+        val = pl_true(c, model)
+        if val is False:
             return False
-        if val != True:
+        if val is not True:
             unknown_clauses.append(c)
     if not unknown_clauses:
         return model
-    if not clauses: return model
+    if not clauses:
+        return model
     P = symbols.pop()
     model_copy = model.copy()
     model.update({P: True})
@@ -82,6 +90,7 @@ def dpll(clauses, symbols, model):
     symbols_copy = symbols[:]
     return (dpll(unit_propagate(unknown_clauses, P), symbols, model) or
             dpll(unit_propagate(unknown_clauses, Not(P)), symbols_copy, model_copy))
+
 
 def dpll_int_repr(clauses, symbols, model):
     """
@@ -113,7 +122,7 @@ def dpll_int_repr(clauses, symbols, model):
     # end DP kernel
     unknown_clauses = []
     for c in clauses:
-        val =  pl_true_int_repr(c, model)
+        val = pl_true_int_repr(c, model)
         if val is False:
             return False
         if val is not True:
@@ -129,6 +138,7 @@ def dpll_int_repr(clauses, symbols, model):
             dpll_int_repr(unit_propagate_int_repr(unknown_clauses, -P), symbols_copy, model_copy))
 
 ### helper methods for DPLL
+
 
 def pl_true_int_repr(clause, model={}):
     """
@@ -155,6 +165,7 @@ def pl_true_int_repr(clause, model={}):
         elif p is None:
             result = None
     return result
+
 
 def unit_propagate(clauses, symbol):
     """
@@ -189,6 +200,7 @@ def unit_propagate(clauses, symbol):
             output.append(c)
     return output
 
+
 def unit_propagate_int_repr(clauses, s):
     """
     Same as unit_propagate, but arguments are expected to be in integer
@@ -218,10 +230,14 @@ def find_pure_symbol(symbols, unknown_clauses):
     for sym in symbols:
         found_pos, found_neg = False, False
         for c in unknown_clauses:
-            if not found_pos and sym in disjuncts(c): found_pos = True
-            if not found_neg and Not(sym) in disjuncts(c): found_neg = True
-        if found_pos != found_neg: return sym, found_pos
+            if not found_pos and sym in disjuncts(c):
+                found_pos = True
+            if not found_neg and Not(sym) in disjuncts(c):
+                found_neg = True
+        if found_pos != found_neg:
+            return sym, found_pos
     return None, None
+
 
 def find_pure_symbol_int_repr(symbols, unknown_clauses):
     """
@@ -229,13 +245,12 @@ def find_pure_symbol_int_repr(symbols, unknown_clauses):
     to be in integer representation
 
     >>> from sympy.logic.algorithms.dpll import find_pure_symbol_int_repr
-    >>> find_pure_symbol_int_repr(set([1,2,3]), [set([1, -2]), set([-2, -3]), set([3, 1])])
+    >>> find_pure_symbol_int_repr(set([1,2,3]),
+    ...     [set([1, -2]), set([-2, -3]), set([3, 1])])
     (1, True)
 
     """
-    all_symbols = set()
-    for c in unknown_clauses:
-        all_symbols.update(c)
+    all_symbols = set().union(*unknown_clauses)
     found_pos = all_symbols.intersection(symbols)
     found_neg = all_symbols.intersection([-s for s in symbols])
     for p in found_pos:
@@ -245,6 +260,7 @@ def find_pure_symbol_int_repr(symbols, unknown_clauses):
         if -p not in found_pos:
             return -p, False
     return None, None
+
 
 def find_unit_clause(clauses, model):
     """
@@ -268,13 +284,15 @@ def find_unit_clause(clauses, model):
             return P, value
     return None, None
 
+
 def find_unit_clause_int_repr(clauses, model):
     """
     Same as find_unit_clause, but arguments are expected to be in
     integer representation.
 
     >>> from sympy.logic.algorithms.dpll import find_unit_clause_int_repr
-    >>> find_unit_clause_int_repr([set([1, 2, 3]), set([2, -3]), set([1, -2])], {1: True})
+    >>> find_unit_clause_int_repr([set([1, 2, 3]),
+    ...     set([2, -3]), set([1, -2])], {1: True})
     (2, False)
 
     """

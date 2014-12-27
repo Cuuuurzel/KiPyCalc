@@ -9,17 +9,21 @@ Usage:
 
 Notes:
 ======
-    Currently the geometry module is restricted to the 2-dimensional
-    Euclidean space.
+    Currently the geometry module supports 2-dimensional
+    and 3 -dimensional Euclidean space.
 
-Examples:
-=========
+Examples
+========
 
 """
 from sympy.geometry.point import Point
+from sympy.geometry.point3d import Point3D
 from sympy.geometry.line import Line, Ray, Segment
+from sympy.geometry.line3d import Line3D, Segment3D, Ray3D
+from sympy.geometry.plane import Plane
 from sympy.geometry.ellipse import Ellipse, Circle
-from sympy.geometry.polygon import Polygon, RegularPolygon, Triangle
-from sympy.geometry.util import *
-from sympy.geometry.exceptions import *
+from sympy.geometry.polygon import Polygon, RegularPolygon, Triangle, rad, deg
+from sympy.geometry.util import are_similar, centroid, convex_hull, idiff, \
+    intersection
+from sympy.geometry.exceptions import GeometryError
 from sympy.geometry.curve import Curve

@@ -28,28 +28,31 @@ print( "#Type 'ans' to refer to the last result." )
 print( "#Keep in mind that your using a Python interpreter!" )
 print( "#Need more? Check the 'SHELL_INIT' file in your SD card!" )
 
+def lmap( f, l ) : return list( map( f, l ) ) 
+
 def evalf( *largs ) :
-	if largs is None : return 0
-	if len( largs ) == 0 : return evalf_NonList( ans )
-	elif len( largs ) == 1 : something = largs[0]
-	else : something = largs
-	try : 
-		if len( something ) == 1 :
-			return evalf_NonList( something )
-		else :
-			return map( evalf, something )
-	except TypeError :
-		return evalf_NonList( something )
+    if largs.__class__ == tuple : largs = list( largs )
+    if largs is None : return 0
+    if len( largs ) == 0 : return evalf_NonList( ans )
+    elif len( largs ) == 1 : something = largs[0]
+    else : something = largs
+    try : 
+        if len( something ) == 1 :
+            return evalf_NonList( something )
+        else :
+            return lmap( evalf, something )
+    except TypeError :
+        return evalf_NonList( something )
 
 def evalf_NonList( something=None ) : 
-	if something is None : return 0
-	try : 
-		return something.evalf()
-	except AttributeError :
-		try :
-			return float( something )
-		except ValueError : 
-			print( "Error : Unvalid Expression!" ) 
+    if something is None : return 0
+    try : 
+        return something.evalf()
+    except AttributeError :
+        try :
+            return float( something )
+        except ValueError : 
+            print( "Error : Unvalid Expression!" ) 
 
 
 #USER-DEFINED FUNCTIONS AND CLASSES :

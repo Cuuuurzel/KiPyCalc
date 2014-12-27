@@ -1,29 +1,38 @@
 """Tools to assist importing optional external modules."""
 
+from __future__ import print_function, division
+
 import sys
 
 # Override these in the module to change the default warning behavior.
 # For example, you might set both to False before running the tests so that
 # warnings are not printed to the console, or set both to True for debugging.
 
-WARN_NOT_INSTALLED = None # Default is False
-WARN_OLD_VERSION = None # Default is True
+WARN_NOT_INSTALLED = None  # Default is False
+WARN_OLD_VERSION = None  # Default is True
+
 
 def __sympy_debug():
     # helper function from sympy/__init__.py
     # We don't just import SYMPY_DEBUG from that file because we don't want to
     # import all of sympy just to use this module.
     import os
-    return eval(os.getenv('SYMPY_DEBUG', 'False'))
+    debug_str = os.getenv('SYMPY_DEBUG', 'False')
+    if debug_str in ('True', 'False'):
+        return eval(debug_str)
+    else:
+        raise RuntimeError("unrecognized value for SYMPY_DEBUG: %s" %
+                           debug_str)
 
 if __sympy_debug():
     WARN_OLD_VERSION = True
     WARN_NOT_INSTALLED = True
 
+
 def import_module(module, min_module_version=None, min_python_version=None,
         warn_not_installed=None, warn_old_version=None,
         module_version_attr='__version__', module_version_attr_call_args=None,
-        __import__kwargs={}):
+        __import__kwargs={}, catch=()):
     """
     Import and return a module if it is installed.
 
@@ -64,13 +73,18 @@ def import_module(module, min_module_version=None, min_python_version=None,
     example, to import a submodule A.B, you must pass a nonempty fromlist option
     to __import__.  See the docstring of __import__().
 
-    **Example**
+    This catches ImportError to determine if the module is not installed.  To
+    catch additional errors, pass them as a tuple to the catch keyword
+    argument.
+
+    Examples
+    ========
 
     >>> from sympy.external import import_module
 
     >>> numpy = import_module('numpy')
 
-    >>> numpy = import_module('numpy', min_python_version=(2, 6),
+    >>> numpy = import_module('numpy', min_python_version=(2, 7),
     ... warn_old_version=False)
 
     >>> numpy = import_module('numpy', min_module_version='1.5',
@@ -87,6 +101,10 @@ def import_module(module, min_module_version=None, min_python_version=None,
     >>> p3 = import_module('mpl_toolkits.mplot3d',
     ... __import__kwargs={'fromlist':['something']})
 
+    >>> # matplotlib.pyplot can raise RuntimeError when the display cannot be opened
+    >>> matplotlib = import_module('matplotlib',
+    ... __import__kwargs={'fromlist':['pyplot']}, catch=(RuntimeError,))
+
     """
     # keyword argument overrides default, and global variable overrides
     # keyword argument.
@@ -102,20 +120,34 @@ def import_module(module, min_module_version=None, min_python_version=None,
         if sys.version_info < min_python_version:
             if warn_old_version:
                 warnings.warn("Python version is too old to use %s "
-                    "(%s or newer required)" % (module, '.'.join(map(str, min_python_version))),
+                    "(%s or newer required)" % (
+                        module, '.'.join(map(str, min_python_version))),
                     UserWarning)
             return
 
+    # PyPy 1.6 has rudimentary NumPy support and importing it produces errors, so skip it
+    if module == 'numpy' and '__pypy__' in sys.builtin_module_names:
+        return
+
     try:
         mod = __import__(module, **__import__kwargs)
-    except ImportError:
-        installed = False
-    else:
-        installed = True
 
-    if not installed:
+        ## there's something funny about imports with matplotlib and py3k. doing
+        ##    from matplotlib import collections
+        ## gives python's stdlib collections module. explicitly re-importing
+        ## the module fixes this.
+        from_list = __import__kwargs.get('fromlist', tuple())
+        for submod in from_list:
+            if submod == 'collections' and mod.__name__ == 'matplotlib':
+                __import__(module + '.' + submod)
+    except ImportError:
         if warn_not_installed:
             warnings.warn("%s module is not installed" % module, UserWarning)
+        return
+    except catch as e:
+        if warn_not_installed:
+            warnings.warn(
+                "%s module could not be used (%s)" % (module, repr(e)))
         return
 
     if min_module_version:
@@ -126,7 +158,7 @@ def import_module(module, min_module_version=None, min_python_version=None,
             if warn_old_version:
                 # Attempt to create a pretty string version of the version
                 if isinstance(min_module_version, basestring):
-                   verstr = min_module_version
+                    verstr = min_module_version
                 elif isinstance(min_module_version, (tuple, list)):
                     verstr = '.'.join(map(str, min_module_version))
                 else:

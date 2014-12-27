@@ -1,9 +1,13 @@
 """Tools for manipulation of expressions using paths. """
 
+from __future__ import print_function, division
+from sympy.core.compatibility import xrange
+
 from sympy.core import Basic
 
+
 class EPath(object):
-    """
+    r"""
     Manipulate expressions using paths.
 
     EPath grammar in EBNF notation::
@@ -98,7 +102,7 @@ class EPath(object):
 
                         span = slice(*span)
 
-                    selector = selector[i+1:]
+                    selector = selector[i + 1:]
 
                 if selector:
                     raise ValueError("trailing characters in selector")
@@ -154,7 +158,8 @@ class EPath(object):
         """
         Modify parts of an expression selected by a path.
 
-        **Examples**
+        Examples
+        ========
 
         >>> from sympy.simplify.epathtools import EPath
         >>> from sympy import sin, cos, E
@@ -223,7 +228,8 @@ class EPath(object):
         """
         Retrieve parts of an expression selected by a path.
 
-        **Examples**
+        Examples
+        ========
 
         >>> from sympy.simplify.epathtools import EPath
         >>> from sympy import sin, cos, E
@@ -274,8 +280,9 @@ class EPath(object):
         _select(self._epath, expr)
         return result
 
+
 def epath(path, expr=None, func=None, args=None, kwargs=None):
-    """
+    r"""
     Manipulate parts of an expression selected by a path.
 
     This function allows to manipulate large nested expressions in single
@@ -290,18 +297,19 @@ def epath(path, expr=None, func=None, args=None, kwargs=None):
     only once.  This function should only be used as a convenient shortcut for
     interactive use.
 
-    **Syntax**
+    This is the supported syntax:
 
-    select all : "/*"
-        Equivalent of ``for arg in args:``.
-    select slice : "/[0]" | "/[1:5]" | "/[1:5:2]"
-        Supports standard Python's slice syntax.
-    select by type : "/list" | "/list|tuple"
-        Emulates :func:`isinstance`.
-    select by attribute : "/__iter__?"
-        Emulates :func:`hasattr`.
+    * select all: ``/*``
+          Equivalent of ``for arg in args:``.
+    * select slice: ``/[0]`` or ``/[1:5]`` or ``/[1:5:2]``
+          Supports standard Python's slice syntax.
+    * select by type: ``/list`` or ``/list|tuple``
+          Emulates :func:`isinstance`.
+    * select by attribute: ``/__iter__?``
+          Emulates :func:`hasattr`.
 
-    **Parameters**
+    Parameters
+    ==========
 
     path : str | EPath
         A path as a string or a compiled EPath.
@@ -314,7 +322,8 @@ def epath(path, expr=None, func=None, args=None, kwargs=None):
     kwargs : dict (optional)
         Additional keyword arguments to ``func``.
 
-    **Examples**
+    Examples
+    ========
 
     >>> from sympy.simplify.epathtools import epath
     >>> from sympy import sin, cos, E

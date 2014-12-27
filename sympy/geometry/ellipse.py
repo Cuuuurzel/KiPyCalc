@@ -1,39 +1,54 @@
 """Elliptical geometrical entities.
 
 Contains
---------
-Ellipse
-Circle
+* Ellipse
+* Circle
 
 """
 
-from sympy.core import S, C, sympify, symbol, Dummy
+from __future__ import print_function, division
+
+from sympy.core import S, C, sympify, pi, Dummy
 from sympy.core.logic import fuzzy_bool
+from sympy.core.numbers import oo, zoo, Rational
 from sympy.simplify import simplify, trigsimp
 from sympy.functions.elementary.miscellaneous import sqrt, Max, Min
 from sympy.functions.elementary.complexes import im
 from sympy.geometry.exceptions import GeometryError
-from sympy.solvers import solve_poly_system, solve
-from entity import GeometryEntity
-from point import Point
-from line import LinearEntity, Line
-from util import _symbol, idiff
+from sympy.polys import Poly, PolynomialError, DomainError
+from sympy.polys.polyutils import _nsort, _not_a_coeff
+from sympy.solvers import solve
+from sympy.utilities.lambdify import lambdify
+from sympy.utilities.iterables import uniq
+from sympy.utilities.misc import filldedent
+from .entity import GeometryEntity
+from .point import Point
+from .line import LinearEntity, Line
+from .util import _symbol, idiff
+
+
+import random
+
+from sympy.utilities.decorator import doctest_depends_on
+
 
 class Ellipse(GeometryEntity):
     """An elliptical GeometryEntity.
 
     Parameters
-    ----------
+    ==========
+
     center : Point, optional
         Default value is Point(0, 0)
-    hradius : number or sympy expression, optional
-    vradius : number or sympy expression, optional
-    eccentricity : number or sympy expression, optional
+    hradius : number or SymPy expression, optional
+    vradius : number or SymPy expression, optional
+    eccentricity : number or SymPy expression, optional
         Two of `hradius`, `vradius` and `eccentricity` must be supplied to
         create an Ellipse. The third is derived from the two supplied.
 
     Attributes
-    ----------
+    ==========
+
     center
     hradius
     vradius
@@ -46,16 +61,18 @@ class Ellipse(GeometryEntity):
     foci
 
     Raises
-    ------
+    ======
+
     GeometryError
-        When `hradius`, `vradius` and `eccentricity` are incorrectly supplied as
-        parameters.
+        When `hradius`, `vradius` and `eccentricity` are incorrectly supplied
+        as parameters.
     TypeError
         When `center` is not a Point.
 
     See Also
-    --------
-    Point
+    ========
+
+    Circle
 
     Notes
     -----
@@ -69,7 +86,8 @@ class Ellipse(GeometryEntity):
     rotation is necessary.
 
     Examples
-    --------
+    ========
+
     >>> from sympy import Ellipse, Point, Rational
     >>> e1 = Ellipse(Point(0, 0), 5, 1)
     >>> e1.hradius, e1.vradius
@@ -78,15 +96,16 @@ class Ellipse(GeometryEntity):
     >>> e2
     Ellipse(Point(3, 1), 3, 9/5)
 
-    Plotting example
-    ----------------
-    >>> from sympy import Circle, Plot, Segment
+    Plotting:
+
+    >>> from sympy.plotting.pygletplot import PygletPlot as Plot
+    >>> from sympy import Circle, Segment
     >>> c1 = Circle(Point(0,0), 1)
     >>> Plot(c1)                                # doctest: +SKIP
     [0]: cos(t), sin(t), 'mode=parametric'
     >>> p = Plot()                              # doctest: +SKIP
     >>> p[0] = c1                               # doctest: +SKIP
-    >>> radius = Segment(c1.center, c1.random_point())  # doctest: +SKIP
+    >>> radius = Segment(c1.center, c1.random_point())
     >>> p[1] = radius                           # doctest: +SKIP
     >>> p                                       # doctest: +SKIP
     [0]: cos(t), sin(t), 'mode=parametric'
@@ -95,8 +114,9 @@ class Ellipse(GeometryEntity):
 
     """
 
-    def __new__(cls, center=None, hradius=None, vradius=None, eccentricity=None,
-                **kwargs):
+    def __new__(
+        cls, center=None, hradius=None, vradius=None, eccentricity=None,
+            **kwargs):
         hradius = sympify(hradius)
         vradius = sympify(vradius)
 
@@ -107,8 +127,8 @@ class Ellipse(GeometryEntity):
         else:
             center = Point(center)
 
-        if len(filter(None, (hradius, vradius, eccentricity))) != 2:
-            raise ValueError('Exactly two arguments of "hradius", '\
+        if len(list(filter(None, (hradius, vradius, eccentricity)))) != 2:
+            raise ValueError('Exactly two arguments of "hradius", '
                 '"vradius", and "eccentricity" must not be None."')
 
         if eccentricity is not None:
@@ -127,11 +147,18 @@ class Ellipse(GeometryEntity):
         """The center of the ellipse.
 
         Returns
-        -------
+        =======
+
         center : number
 
+        See Also
+        ========
+
+        sympy.geometry.point.Point
+
         Examples
-        --------
+        ========
+
         >>> from sympy import Point, Ellipse
         >>> p1 = Point(0, 0)
         >>> e1 = Ellipse(p1, 3, 1)
@@ -139,18 +166,25 @@ class Ellipse(GeometryEntity):
         Point(0, 0)
 
         """
-        return self.__getitem__(0)
+        return self.args[0]
 
     @property
     def hradius(self):
         """The horizontal radius of the ellipse.
 
         Returns
-        -------
+        =======
+
         hradius : number
 
+        See Also
+        ========
+
+        vradius, major, minor
+
         Examples
-        --------
+        ========
+
         >>> from sympy import Point, Ellipse
         >>> p1 = Point(0, 0)
         >>> e1 = Ellipse(p1, 3, 1)
@@ -158,18 +192,25 @@ class Ellipse(GeometryEntity):
         3
 
         """
-        return self.__getitem__(1)
+        return self.args[1]
 
     @property
     def vradius(self):
         """The vertical radius of the ellipse.
 
         Returns
-        -------
+        =======
+
         vradius : number
 
+        See Also
+        ========
+
+        hradius, major, minor
+
         Examples
-        --------
+        ========
+
         >>> from sympy import Point, Ellipse
         >>> p1 = Point(0, 0)
         >>> e1 = Ellipse(p1, 3, 1)
@@ -177,18 +218,25 @@ class Ellipse(GeometryEntity):
         1
 
         """
-        return self.__getitem__(2)
+        return self.args[2]
 
     @property
     def minor(self):
         """Shorter axis of the ellipse (if it can be determined) else vradius.
 
         Returns
-        -------
+        =======
+
         minor : number or expression
 
+        See Also
+        ========
+
+        hradius, vradius, major
+
         Examples
-        --------
+        ========
+
         >>> from sympy import Point, Ellipse, Symbol
         >>> p1 = Point(0, 0)
         >>> e1 = Ellipse(p1, 3, 1)
@@ -208,21 +256,34 @@ class Ellipse(GeometryEntity):
         m
 
         """
-        rv = Min(*self[1:3])
-        if rv.func is Min:
-            return self.vradius
-        return rv
+        ab = self.args[1:3]
+        if len(ab) == 1:
+            return ab[0]
+        a, b = ab
+        o = a - b < 0
+        if o == True:
+            return a
+        elif o == False:
+            return b
+        return self.vradius
 
     @property
     def major(self):
         """Longer axis of the ellipse (if it can be determined) else hradius.
 
         Returns
-        -------
+        =======
+
         major : number or expression
 
+        See Also
+        ========
+
+        hradius, vradius, minor
+
         Examples
-        --------
+        ========
+
         >>> from sympy import Point, Ellipse, Symbol
         >>> p1 = Point(0, 0)
         >>> e1 = Ellipse(p1, 3, 1)
@@ -242,22 +303,29 @@ class Ellipse(GeometryEntity):
         m + 1
 
         """
-        rv = Max(*self[1:3])
-        if rv.func is Max:
-            return self.hradius
-        return rv
-
+        ab = self.args[1:3]
+        if len(ab) == 1:
+            return ab[0]
+        a, b = ab
+        o = b - a < 0
+        if o == True:
+            return a
+        elif o == False:
+            return b
+        return self.hradius
 
     @property
     def area(self):
         """The area of the ellipse.
 
         Returns
-        -------
+        =======
+
         area : number
 
         Examples
-        --------
+        ========
+
         >>> from sympy import Point, Ellipse
         >>> p1 = Point(0, 0)
         >>> e1 = Ellipse(p1, 3, 1)
@@ -272,7 +340,8 @@ class Ellipse(GeometryEntity):
         """The circumference of the ellipse.
 
         Examples
-        --------
+        ========
+
         >>> from sympy import Point, Ellipse
         >>> p1 = Point(0, 0)
         >>> e1 = Ellipse(p1, 3, 1)
@@ -284,20 +353,21 @@ class Ellipse(GeometryEntity):
             return 2*pi*self.hradius
         else:
             x = C.Dummy('x', real=True)
-            return 4*self.major*\
-                   C.Integral(sqrt((1 - (self.eccentricity*x)**2)/(1 - x**2)),
-                              (x, 0, 1))
+            return 4*self.major*C.Integral(
+                sqrt((1 - (self.eccentricity*x)**2)/(1 - x**2)), (x, 0, 1))
 
     @property
     def eccentricity(self):
         """The eccentricity of the ellipse.
 
         Returns
-        -------
+        =======
+
         eccentricity : number
 
         Examples
-        --------
+        ========
+
         >>> from sympy import Point, Ellipse, sqrt
         >>> p1 = Point(0, 0)
         >>> e1 = Ellipse(p1, 3, sqrt(2))
@@ -314,11 +384,18 @@ class Ellipse(GeometryEntity):
         The shortest distance between the focus and the contour.
 
         Returns
-        -------
+        =======
+
         periapsis : number
 
+        See Also
+        ========
+
+        apoapsis : Returns greatest distance between focus and contour
+
         Examples
-        --------
+        ========
+
         >>> from sympy import Point, Ellipse
         >>> p1 = Point(0, 0)
         >>> e1 = Ellipse(p1, 3, 1)
@@ -330,16 +407,23 @@ class Ellipse(GeometryEntity):
 
     @property
     def apoapsis(self):
-        """The periapsis of the ellipse.
+        """The apoapsis of the ellipse.
 
         The greatest distance between the focus and the contour.
 
         Returns
-        -------
+        =======
+
         apoapsis : number
 
+        See Also
+        ========
+
+        periapsis : Returns shortest distance between foci and contour
+
         Examples
-        --------
+        ========
+
         >>> from sympy import Point, Ellipse
         >>> p1 = Point(0, 0)
         >>> e1 = Ellipse(p1, 3, 1)
@@ -356,11 +440,18 @@ class Ellipse(GeometryEntity):
         The distance between the center and one focus.
 
         Returns
-        -------
+        =======
+
         focus_distance : number
 
+        See Also
+        ========
+
+        foci
+
         Examples
-        --------
+        ========
+
         >>> from sympy import Point, Ellipse
         >>> p1 = Point(0, 0)
         >>> e1 = Ellipse(p1, 3, 1)
@@ -379,16 +470,20 @@ class Ellipse(GeometryEntity):
         The foci can only be calculated if the major/minor axes are known.
 
         Raises
-        ------
+        ======
+
         ValueError
             When the major and minor axis cannot be determined.
 
         See Also
-        --------
-        Point
+        ========
+
+        sympy.geometry.point.Point
+        focus_distance : Returns the distance between focus and center
 
         Examples
-        --------
+        ========
+
         >>> from sympy import Point, Ellipse
         >>> p1 = Point(0, 0)
         >>> e1 = Ellipse(p1, 3, 1)
@@ -401,8 +496,8 @@ class Ellipse(GeometryEntity):
         if hr == vr:
             return (c, c)
 
-
-        # calculate focus distance manually, since focus_distance calls this routine
+        # calculate focus distance manually, since focus_distance calls this
+        # routine
         fd = sqrt(self.major**2 - self.minor**2)
         if hr == self.minor:
             # foci on the y-axis
@@ -410,6 +505,96 @@ class Ellipse(GeometryEntity):
         elif hr == self.major:
             # foci on the x-axis
             return (c + Point(-fd, 0), c + Point(fd, 0))
+
+    def rotate(self, angle=0, pt=None):
+        """Rotate ``angle`` radians counterclockwise about Point ``pt``.
+
+        Note: since the general ellipse is not supported, only rotations that
+        are integer multiples of pi/2 are allowed.
+
+        Examples
+        ========
+
+        >>> from sympy import Ellipse, pi
+        >>> Ellipse((1, 0), 2, 1).rotate(pi/2)
+        Ellipse(Point(0, 1), 1, 2)
+        >>> Ellipse((1, 0), 2, 1).rotate(pi)
+        Ellipse(Point(-1, 0), 2, 1)
+        """
+        if self.hradius == self.vradius:
+            return self.func(*self.args)
+        if (angle/S.Pi).is_integer:
+            return super(Ellipse, self).rotate(angle, pt)
+        if (2*angle/S.Pi).is_integer:
+            return self.func(self.center.rotate(angle, pt), self.vradius, self.hradius)
+        # XXX see https://github.com/sympy/sympy/issues/2815 for general ellipes
+        raise NotImplementedError('Only rotations of pi/2 are currently supported for Ellipse.')
+
+
+    def scale(self, x=1, y=1, pt=None):
+        """Override GeometryEntity.scale since it is the major and minor
+        axes which must be scaled and they are not GeometryEntities.
+
+        Examples
+        ========
+
+        >>> from sympy import Ellipse
+        >>> Ellipse((0, 0), 2, 1).scale(2, 4)
+        Circle(Point(0, 0), 4)
+        >>> Ellipse((0, 0), 2, 1).scale(2)
+        Ellipse(Point(0, 0), 4, 1)
+        """
+        c = self.center
+        if pt:
+            pt = Point(pt)
+            return self.translate(*(-pt).args).scale(x, y).translate(*pt.args)
+        h = self.hradius
+        v = self.vradius
+        return self.func(c.scale(x, y), hradius=h*x, vradius=v*y)
+
+    def reflect(self, line):
+        """Override GeometryEntity.reflect since the radius
+        is not a GeometryEntity.
+
+        Examples
+        ========
+
+        >>> from sympy import Circle, Line
+        >>> Circle((0, 1), 1).reflect(Line((0, 0), (1, 1)))
+        Circle(Point(1, 0), -1)
+        >>> from sympy import Ellipse, Line, Point
+        >>> Ellipse(Point(3, 4), 1, 3).reflect(Line(Point(0, -4), Point(5, 0)))
+        Traceback (most recent call last):
+        ...
+        NotImplementedError:
+        General Ellipse is not supported but the equation of the reflected
+        Ellipse is given by the zeros of: f(x, y) = (9*x/41 + 40*y/41 +
+        37/41)**2 + (40*x/123 - 3*y/41 - 364/123)**2 - 1
+
+        Notes
+        =====
+
+        Until the general ellipse (with no axis parallel to the x-axis) is
+        supported a NotImplemented error is raised and the equation whose
+        zeros define the rotated ellipse is given.
+
+        """
+        from .util import _uniquely_named_symbol
+
+        if line.slope in (0, oo):
+            c = self.center
+            c = c.reflect(line)
+            return self.func(c, -self.hradius, self.vradius)
+        else:
+            x, y = [_uniquely_named_symbol(name, self, line) for name in 'xy']
+            expr = self.equation(x, y)
+            p = Point(x, y).reflect(line)
+            result = expr.subs(zip((x, y), p.args
+                               ), simultaneous=True)
+            raise NotImplementedError(filldedent(
+                'General Ellipse is not supported but the equation '
+                'of the reflected Ellipse is given by the zeros of: ' +
+                "f(%s, %s) = %s" % (str(x), str(y), str(result))))
 
     def encloses_point(self, p):
         """
@@ -420,15 +605,23 @@ class Ellipse(GeometryEntity):
         Being on the border of self is considered False.
 
         Parameters
-        ----------
+        ==========
+
         p : Point
 
         Returns
-        -------
+        =======
+
         encloses_point : True, False or None
 
+        See Also
+        ========
+
+        sympy.geometry.point.Point
+
         Examples
-        --------
+        ========
+
         >>> from sympy import Ellipse, S
         >>> from sympy.abc import t
         >>> e = Ellipse((0, 0), 3, 2)
@@ -440,6 +633,7 @@ class Ellipse(GeometryEntity):
         False
 
         """
+        p = Point(p)
         if p in self:
             return False
 
@@ -455,6 +649,7 @@ class Ellipse(GeometryEntity):
 
         return fuzzy_bool(test.is_positive)
 
+    @doctest_depends_on(modules=('pyglet',))
     def tangent_lines(self, p):
         """Tangent lines between `p` and the ellipse.
 
@@ -463,49 +658,54 @@ class Ellipse(GeometryEntity):
         None if no tangent line is possible (e.g., `p` inside ellipse).
 
         Parameters
-        ----------
+        ==========
+
         p : Point
 
         Returns
-        -------
+        =======
+
         tangent_lines : list with 1 or 2 Lines
 
         Raises
-        ------
+        ======
+
         NotImplementedError
             Can only find tangent lines for a point, `p`, on the ellipse.
 
         See Also
-        --------
-        Point
-        Line
+        ========
+
+        sympy.geometry.point.Point, sympy.geometry.line.Line
 
         Examples
-        --------
+        ========
+
         >>> from sympy import Point, Ellipse
         >>> e1 = Ellipse(Point(0, 0), 3, 2)
         >>> e1.tangent_lines(Point(3, 0))
         [Line(Point(3, 0), Point(3, -12))]
 
         >>> # This will plot an ellipse together with a tangent line.
-        >>> from sympy import Point, Ellipse, Plot
+        >>> from sympy.plotting.pygletplot import PygletPlot as Plot
+        >>> from sympy import Point, Ellipse
         >>> e = Ellipse(Point(0,0), 3, 2)
-        >>> t = e.tangent_lines(e.random_point()) # doctest: +SKIP
-        >>> p = Plot() # doctest: +SKIP
+        >>> t = e.tangent_lines(e.random_point())
+        >>> p = Plot()
         >>> p[0] = e # doctest: +SKIP
         >>> p[1] = t # doctest: +SKIP
 
         """
-        from sympy import solve
-
+        p = Point(p)
         if self.encloses_point(p):
             return []
 
         if p in self:
-            rise = (self.vradius ** 2)*(self.center[0] - p[0])
-            run = (self.hradius ** 2)*(p[1] - self.center[1])
-            p2 = Point(simplify(p[0] + run),
-                       simplify(p[1] + rise))
+            delta = self.center - p
+            rise = (self.vradius ** 2)*delta.x
+            run = -(self.hradius ** 2)*delta.y
+            p2 = Point(simplify(p.x + run),
+                       simplify(p.y + rise))
             return [Line(p, p2)]
         else:
             if len(self.foci) == 2:
@@ -525,12 +725,13 @@ class Ellipse(GeometryEntity):
             eq = self.equation(x, y)
             dydx = idiff(eq, y, x)
             slope = Line(p, Point(x, y)).slope
-            tangent_points = solve([w.as_numer_denom()[0] for w in [slope - dydx, eq]], [x, y])
+            tangent_points = solve([slope - dydx, eq], [x, y])
 
             # handle horizontal and vertical tangent lines
             if len(tangent_points) == 1:
-                assert tangent_points[0][0] == p[0] or tangent_points[0][1] == p[1]
-                return [Line(p, Point(p[0]+1, p[1])), Line(p, Point(p[0], p[1]+1))]
+                assert tangent_points[0][
+                    0] == p.x or tangent_points[0][1] == p.y
+                return [Line(p, p + Point(1, 0)), Line(p, p + Point(0, 1))]
 
             # others
             return [Line(p, tangent_points[0]), Line(p, tangent_points[1])]
@@ -539,22 +740,31 @@ class Ellipse(GeometryEntity):
         """Is `o` tangent to the ellipse?
 
         Parameters
-        ----------
+        ==========
+
         o : GeometryEntity
             An Ellipse, LinearEntity or Polygon
 
         Raises
-        ------
+        ======
+
         NotImplementedError
             When the wrong type of argument is supplied.
 
         Returns
-        -------
+        =======
+
         is_tangent: boolean
             True if o is tangent to the ellipse, False otherwise.
 
+        See Also
+        ========
+
+        tangent_lines
+
         Examples
-        --------
+        ========
+
         >>> from sympy import Point, Ellipse, Line
         >>> p0, p1, p2 = Point(0, 0), Point(3, 0), Point(3, 3)
         >>> e1 = Ellipse(p0, 3, 2)
@@ -566,8 +776,10 @@ class Ellipse(GeometryEntity):
         inter = None
         if isinstance(o, Ellipse):
             inter = self.intersection(o)
-            return (inter is not None and isinstance(inter[0], Point)
-                    and len(inter) == 1)
+            if isinstance(inter, Ellipse):
+                return False
+            return (inter is not None and len(inter) == 1
+                    and isinstance(inter[0], Point))
         elif isinstance(o, LinearEntity):
             inter = self._do_line_intersection(o)
             if inter is not None and len(inter) == 1:
@@ -583,29 +795,113 @@ class Ellipse(GeometryEntity):
         else:
             raise NotImplementedError("Unknown argument type")
 
+    def normal_lines(self, p, prec=None):
+        """Normal lines between `p` and the ellipse.
+
+        Parameters
+        ==========
+
+        p : Point
+
+        Returns
+        =======
+
+        normal_lines : list with 1, 2 or 4 Lines
+
+        Examples
+        ========
+
+        >>> from sympy import Line, Point, Ellipse
+        >>> e = Ellipse((0, 0), 2, 3)
+        >>> c = e.center
+        >>> e.normal_lines(c + Point(1, 0))
+        [Line(Point(0, 0), Point(1, 0))]
+        >>> e.normal_lines(c)
+        [Line(Point(0, 0), Point(0, 1)), Line(Point(0, 0), Point(1, 0))]
+
+        Off-axis points require the solution of a quartic equation. This
+        often leads to very large expressions that may be of little practical
+        use. An approximate solution of `prec` digits can be obtained by
+        passing in the desired value:
+
+        >>> e.normal_lines((3, 3), prec=2)
+        [Line(Point(-38/47, -85/31), Point(9/47, -21/17)),
+        Line(Point(19/13, -43/21), Point(32/13, -8/3))]
+
+        Whereas the above solution has an operation count of 12, the exact
+        solution has an operation count of 2020.
+        """
+        p = Point(p)
+
+        # XXX change True to something like self.angle == 0 if the arbitrarily
+        # rotated ellipse is introduced.
+        # https://github.com/sympy/sympy/issues/2815)
+        if True:
+            rv = []
+            if p.x == self.center.x:
+                rv.append(Line(self.center, slope=oo))
+            if p.y == self.center.y:
+                rv.append(Line(self.center, slope=0))
+            if rv:
+                # at these special orientations of p either 1 or 2 normals
+                # exist and we are done
+                return rv
+
+        # find the 4 normal points and construct lines through them with
+        # the corresponding slope
+        x, y = Dummy('x', real=True), Dummy('y', real=True)
+        eq = self.equation(x, y)
+        dydx = idiff(eq, y, x)
+        norm = -1/dydx
+        slope = Line(p, (x, y)).slope
+        seq = slope - norm
+        yis = solve(seq, y)[0]
+        xeq = eq.subs(y, yis).as_numer_denom()[0].expand()
+        if len(xeq.free_symbols) == 1:
+            try:
+                # this is so much faster, it's worth a try
+                xsol = Poly(xeq, x).real_roots()
+            except (DomainError, PolynomialError, NotImplementedError):
+                xsol = _nsort(solve(xeq, x), separated=True)[0]
+            points = [Point(i, solve(eq.subs(x, i), y)[0]) for i in xsol]
+        else:
+            raise NotImplementedError(
+                'intersections for the general ellipse are not supported')
+        slopes = [norm.subs(zip((x, y), pt.args)) for pt in points]
+        if prec is not None:
+            points = [pt.n(prec) for pt in points]
+            slopes = [i if _not_a_coeff(i) else i.n(prec) for i in slopes]
+        return [Line(pt, slope=s) for pt,s in zip(points, slopes)]
+
+
     def arbitrary_point(self, parameter='t'):
         """A parameterized point on the ellipse.
 
         Parameters
-        ----------
+        ==========
+
         parameter : str, optional
             Default value is 't'.
 
         Returns
-        -------
+        =======
+
         arbitrary_point : Point
 
         Raises
-        ------
+        ======
+
         ValueError
             When `parameter` already appears in the functions.
 
         See Also
-        --------
-        Point
+        ========
+
+        sympy.geometry.point.Point
 
         Examples
-        --------
+        ========
+
         >>> from sympy import Point, Ellipse
         >>> e1 = Ellipse(Point(0, 0), 3, 2)
         >>> e1.arbitrary_point()
@@ -614,25 +910,29 @@ class Ellipse(GeometryEntity):
         """
         t = _symbol(parameter)
         if t.name in (f.name for f in self.free_symbols):
-            raise ValueError('Symbol %s already appears in object and cannot be used as a parameter.' % t.name)
-        return Point(self.center[0] + self.hradius*C.cos(t),
-                self.center[1] + self.vradius*C.sin(t))
+            raise ValueError(filldedent('Symbol %s already appears in object '
+                'and cannot be used as a parameter.' % t.name))
+        return Point(self.center.x + self.hradius*C.cos(t),
+                     self.center.y + self.vradius*C.sin(t))
 
     def plot_interval(self, parameter='t'):
         """The plot interval for the default geometric plot of the Ellipse.
 
         Parameters
-        ----------
+        ==========
+
         parameter : str, optional
             Default value is 't'.
 
         Returns
-        -------
+        =======
+
         plot_interval : list
             [parameter, lower_bound, upper_bound]
 
         Examples
-        --------
+        ========
+
         >>> from sympy import Point, Ellipse
         >>> e1 = Ellipse(Point(0, 0), 3, 2)
         >>> e1.plot_interval()
@@ -642,19 +942,23 @@ class Ellipse(GeometryEntity):
         t = _symbol(parameter)
         return [t, -S.Pi, S.Pi]
 
-    def random_point(self):
+    def random_point(self, seed=None):
         """A random point on the ellipse.
 
         Returns
-        -------
+        =======
+
         point : Point
 
         See Also
-        --------
-        Point
+        ========
 
-        Note
-        ----
+        sympy.geometry.point.Point
+        arbitrary_point : Returns parameterized point on ellipse
+
+        Notes
+        -----
+
         A random point may not appear to be on the ellipse, ie, `p in e` may
         return False. This is because the coordinates of the point will be
         floating point values, and when these values are substituted into the
@@ -662,41 +966,86 @@ class Ellipse(GeometryEntity):
         point rounding error.
 
         Examples
-        --------
-        >>> from sympy import Point, Ellipse
+        ========
+
+        >>> from sympy import Point, Ellipse, Segment
         >>> e1 = Ellipse(Point(0, 0), 3, 2)
-        >>> p1 = e1.random_point()
-        >>> # a random point may not appear to be on the ellipse because of
-        >>> # floating point rounding error
-        >>> p1 in e1 # doctest: +SKIP
-        True
-        >>> p1 # doctest +ELLIPSIS
+        >>> e1.random_point() # gives some random point
         Point(...)
+        >>> p1 = e1.random_point(seed=0); p1.n(2)
+        Point(2.1, 1.4)
+
+        The random_point method assures that the point will test as being
+        in the ellipse:
+
+        >>> p1 in e1
+        True
+
+        Notes
+        =====
+
+        An arbitrary_point with a random value of t substituted into it may
+        not test as being on the ellipse because the expression tested that
+        a point is on the ellipse doesn't simplify to zero and doesn't evaluate
+        exactly to zero:
+
+        >>> from sympy.abc import t
+        >>> e1.arbitrary_point(t)
+        Point(3*cos(t), 2*sin(t))
+        >>> p2 = _.subs(t, 0.1)
+        >>> p2 in e1
+        False
+
+        Note that arbitrary_point routine does not take this approach. A value
+        for cos(t) and sin(t) (not t) is substituted into the arbitrary point.
+        There is a small chance that this will give a point that will not
+        test as being in the ellipse, so the process is repeated (up to 10
+        times) until a valid point is obtained.
 
         """
-        from random import random
+        from sympy import sin, cos, Rational
         t = _symbol('t')
-        p = self.arbitrary_point(t)
-        # get a random value in [-pi, pi)
-        subs_val = float(S.Pi)*(2*random() - 1)
-        return Point(p[0].subs(t, subs_val), p[1].subs(t, subs_val))
+        x, y = self.arbitrary_point(t).args
+        # get a random value in [-1, 1) corresponding to cos(t)
+        # and confirm that it will test as being in the ellipse
+        if seed is not None:
+            rng = random.Random(seed)
+        else:
+            rng = random
+        for i in range(10):  # should be enough?
+            # simplify this now or else the Float will turn s into a Float
+            c = 2*Rational(rng.random()) - 1
+            s = sqrt(1 - c**2)
+            p1 = Point(x.subs(cos(t), c), y.subs(sin(t), s))
+            if p1 in self:
+                return p1
+        raise GeometryError(
+            'Having problems generating a point in the ellipse.')
 
     def equation(self, x='x', y='y'):
         """The equation of the ellipse.
 
         Parameters
-        ----------
+        ==========
+
         x : str, optional
             Label for the x-axis. Default value is 'x'.
         y : str, optional
             Label for the y-axis. Default value is 'y'.
 
         Returns
-        -------
+        =======
+
         equation : sympy expression
 
+        See Also
+        ========
+
+        arbitrary_point : Returns parameterized point on ellipse
+
         Examples
-        --------
+        ========
+
         >>> from sympy import Point, Ellipse
         >>> e1 = Ellipse(Point(1, 0), 3, 2)
         >>> e1.equation()
@@ -705,8 +1054,8 @@ class Ellipse(GeometryEntity):
         """
         x = _symbol(x)
         y = _symbol(y)
-        t1 = ((x - self.center[0]) / self.hradius)**2
-        t2 = ((y - self.center[1]) / self.vradius)**2
+        t1 = ((x - self.center.x) / self.hradius)**2
+        t2 = ((y - self.center.y) / self.vradius)**2
         return t1 + t2 - 1
 
     def _do_line_intersection(self, o):
@@ -715,12 +1064,8 @@ class Ellipse(GeometryEntity):
 
         All LinearEntities are treated as a line and filtered at
         the end to see that they lie in o.
+
         """
-        def dot(p1, p2):
-            sum = 0
-            for ind in xrange(len(p1.args)):
-                sum += p1[ind] * p2[ind]
-            return simplify(sum)
 
         hr_sq = self.hradius ** 2
         vr_sq = self.vradius ** 2
@@ -728,91 +1073,70 @@ class Ellipse(GeometryEntity):
 
         ldir = lp[1] - lp[0]
         diff = lp[0] - self.center
-        mdir = (ldir[0] / hr_sq, ldir[1] / vr_sq)
-        mdiff = (diff[0] / hr_sq, diff[1] / vr_sq)
+        mdir = Point(ldir.x/hr_sq, ldir.y/vr_sq)
+        mdiff = Point(diff.x/hr_sq, diff.y/vr_sq)
 
-        a = dot(ldir, mdir)
-        b = dot(ldir, mdiff)
-        c = dot(diff, mdiff) - 1
-        det = simplify(b*b - a*c);
+        a = ldir.dot(mdir)
+        b = ldir.dot(mdiff)
+        c = diff.dot(mdiff) - 1
+        det = simplify(b*b - a*c)
 
         result = []
         if det == 0:
             t = -b / a
             result.append(lp[0] + (lp[1] - lp[0]) * t)
-        else:
-            is_good = True
-            try:
-                is_good = (det > 0)
-            except NotImplementedError: #symbolic, allow
-                is_good = True
-
-            if is_good:
-                root = sqrt(det)
-                t_a = (-b - root) / a
-                t_b = (-b + root) / a
-                result.append( lp[0] + (lp[1] - lp[0]) * t_a )
-                result.append( lp[0] + (lp[1] - lp[0]) * t_b )
+        # Definite and potential symbolic intersections are allowed.
+        elif (det > 0) != False:
+            root = sqrt(det)
+            t_a = (-b - root) / a
+            t_b = (-b + root) / a
+            result.append( lp[0] + (lp[1] - lp[0]) * t_a )
+            result.append( lp[0] + (lp[1] - lp[0]) * t_b )
 
         return [r for r in result if r in o]
 
-    def _do_circle_intersection(self, o):
-        """The intersection of an Ellipse and a Circle.
-
-        Private helper method for `intersection`.
-
-        """
-        variables = self.equation().atoms(C.Symbol)
-        if len(variables) > 2:
-            return None
-        if self.center == o.center:
-            a, b, r = o.major, o.minor, self.radius
-            x = a*sqrt(simplify((r**2 - b**2)/(a**2 - b**2)))
-            y = b*sqrt(simplify((a**2 - r**2)/(a**2 - b**2)))
-            return list(set([Point(x, y), Point(x, -y), Point(-x, y),
-                             Point(-x, -y)]))
-        else:
-            x, y = variables
-            xx = solve(self.equation(), x)
-            intersect = []
-            for xi in xx:
-                yy = solve(o.equation().subs(x, xi), y)
-                for yi in yy:
-                    intersect.append(Point(xi, yi))
-            return list(set(intersect))
-
     def _do_ellipse_intersection(self, o):
-        """The intersection of two ellipses.
+        """The intersection of an ellipse with another ellipse or a circle.
 
         Private helper method for `intersection`.
 
         """
-        x = Dummy('x')
-        y = Dummy('y')
+
+        x = Dummy('x', real=True)
+        y = Dummy('y', real=True)
         seq = self.equation(x, y)
         oeq = o.equation(x, y)
         result = solve([seq, oeq], [x, y])
-        return [Point(*r) for r in result if im(r[0]).is_zero and im(r[1]).is_zero]
+        return [Point(*r) for r in list(uniq(result))]
+
 
     def intersection(self, o):
         """The intersection of this ellipse and another geometrical entity
         `o`.
 
         Parameters
-        ----------
+        ==========
+
         o : GeometryEntity
 
         Returns
-        -------
-        intersection : list of GeometryEntities
+        =======
+
+        intersection : list of GeometryEntity objects
 
         Notes
         -----
         Currently supports intersections with Point, Line, Segment, Ray,
         Circle and Ellipse types.
 
-        Example
-        -------
+        See Also
+        ========
+
+        sympy.geometry.entity.GeometryEntity
+
+        Examples
+        ========
+
         >>> from sympy import Ellipse, Point, Line, sqrt
         >>> e = Ellipse(Point(0, 0), 5, 7)
         >>> e.intersection(Point(0, 0))
@@ -833,11 +1157,10 @@ class Ellipse(GeometryEntity):
         >>> e.intersection(Ellipse(Point(100500, 0), 4, 3))
         []
         >>> e.intersection(Ellipse(Point(0, 0), 3, 4))
-        [Point(-363/175, -48*sqrt(111)/175), Point(-363/175, 48*sqrt(111)/175),
-        Point(3, 0)]
+        [Point(-363/175, -48*sqrt(111)/175), Point(-363/175, 48*sqrt(111)/175), Point(3, 0)]
+
         >>> e.intersection(Ellipse(Point(-1, 0), 3, 4))
-        [Point(-17/5, -12/5), Point(-17/5, 12/5), Point(7/5, -12/5),
-        Point(7/5, 12/5)]
+        [Point(-17/5, -12/5), Point(-17/5, 12/5), Point(7/5, -12/5), Point(7/5, 12/5)]
         """
         if isinstance(o, Point):
             if o in self:
@@ -851,7 +1174,7 @@ class Ellipse(GeometryEntity):
             return self._do_line_intersection(o)
 
         elif isinstance(o, Circle):
-            return self._do_circle_intersection(o)
+            return self._do_ellipse_intersection(o)
 
         elif isinstance(o, Ellipse):
             if o == self:
@@ -861,10 +1184,43 @@ class Ellipse(GeometryEntity):
 
         return o.intersection(self)
 
+    def evolute(self, x='x', y='y'):
+        """The equation of evolute of the ellipse.
+
+        Parameters
+        ==========
+
+        x : str, optional
+            Label for the x-axis. Default value is 'x'.
+        y : str, optional
+            Label for the y-axis. Default value is 'y'.
+
+        Returns
+        =======
+
+        equation : sympy expression
+
+        Examples
+        ========
+
+        >>> from sympy import Point, Ellipse
+        >>> e1 = Ellipse(Point(1, 0), 3, 2)
+        >>> e1.evolute()
+        2**(2/3)*y**(2/3) + (3*x - 3)**(2/3) - 5**(2/3)
+        """
+        if len(self.args) != 3:
+            raise NotImplementedError('Evolute of arbitrary Ellipse is not supported.')
+        x = _symbol(x)
+        y = _symbol(y)
+        t1 = (self.hradius*(x - self.center.x))**Rational(2, 3)
+        t2 = (self.vradius*(y - self.center.y))**Rational(2, 3)
+        return t1 + t2 - (self.hradius**2 - self.vradius**2)**Rational(2, 3)
+
     def __eq__(self, o):
         """Is the other GeometryEntity the same as this ellipse?"""
-        return (self.center == o.center and self.hradius == o.hradius
-                and self.vradius == o.vradius)
+        return isinstance(o, GeometryEntity) and (self.center == o.center and
+                                                  self.hradius == o.hradius and
+                                                  self.vradius == o.vradius)
 
     def __hash__(self):
         return super(Ellipse, self).__hash__()
@@ -874,7 +1230,7 @@ class Ellipse(GeometryEntity):
             x = C.Dummy('x', real=True)
             y = C.Dummy('y', real=True)
 
-            res = self.equation(x, y).subs({x: o[0], y: o[1]})
+            res = self.equation(x, y).subs({x: o.x, y: o.y})
             return trigsimp(simplify(res)) is S.Zero
         elif isinstance(o, Ellipse):
             return self == o
@@ -888,29 +1244,34 @@ class Circle(Ellipse):
     non-collinear points.
 
     Parameters
-    ----------
+    ==========
+
     center : Point
     radius : number or sympy expression
     points : sequence of three Points
 
     Attributes
-    ----------
+    ==========
+
     radius (synonymous with hradius, vradius, major and minor)
     circumference
     equation
 
     Raises
-    ------
+    ======
+
     GeometryError
         When trying to construct circle from three collinear points.
         When trying to construct circle from incorrect parameters.
 
     See Also
-    --------
-    Point
+    ========
+
+    Ellipse, sympy.geometry.point.Point
 
     Examples
-    --------
+    ========
+
     >>> from sympy.geometry import Point, Circle
     >>> # a circle constructed from a center and radius
     >>> c1 = Circle(Point(0, 0), 5)
@@ -923,13 +1284,15 @@ class Circle(Ellipse):
     (sqrt(2)/2, sqrt(2)/2, sqrt(2)/2, Point(1/2, 1/2))
 
     """
+
     def __new__(cls, *args, **kwargs):
         c, r = None, None
         if len(args) == 3:
             args = [Point(a) for a in args]
             if Point.is_collinear(*args):
-                raise GeometryError("Cannot construct a circle from three collinear points")
-            from polygon import Triangle
+                raise GeometryError(
+                    "Cannot construct a circle from three collinear points")
+            from .polygon import Triangle
             t = Triangle(*args)
             c = t.circumcenter
             r = t.circumradius
@@ -948,45 +1311,59 @@ class Circle(Ellipse):
         """The radius of the circle.
 
         Returns
-        -------
+        =======
+
         radius : number or sympy expression
 
+        See Also
+        ========
+
+        Ellipse.major, Ellipse.minor, Ellipse.hradius, Ellipse.vradius
+
         Examples
-        --------
+        ========
+
         >>> from sympy import Point, Circle
         >>> c1 = Circle(Point(3, 4), 6)
         >>> c1.radius
         6
 
         """
-        return self.__getitem__(1)
-
-    @property
-    def major(self):
-        return self.radius
-
-    @property
-    def minor(self):
-        return self.radius
-
-    @property
-    def hradius(self):
-        return self.radius
+        return self.args[1]
 
     @property
     def vradius(self):
-        return self.radius
+        """
+        This Ellipse property is an alias for the Circle's radius.
+
+        Whereas hradius, major and minor can use Ellipse's conventions,
+        the vradius does not exist for a circle. It is always a positive
+        value in order that the Circle, like Polygons, will have an
+        area that can be positive or negative as determined by the sign
+        of the hradius.
+
+        Examples
+        ========
+
+        >>> from sympy import Point, Circle
+        >>> c1 = Circle(Point(3, 4), 6)
+        >>> c1.vradius
+        6
+        """
+        return abs(self.radius)
 
     @property
     def circumference(self):
         """The circumference of the circle.
 
         Returns
-        -------
-        circumference : number or sympy expression
+        =======
+
+        circumference : number or SymPy expression
 
         Examples
-        --------
+        ========
+
         >>> from sympy import Point, Circle
         >>> c1 = Circle(Point(3, 4), 6)
         >>> c1.circumference
@@ -999,18 +1376,21 @@ class Circle(Ellipse):
         """The equation of the circle.
 
         Parameters
-        ----------
+        ==========
+
         x : str or Symbol, optional
             Default value is 'x'.
         y : str or Symbol, optional
             Default value is 'y'.
 
         Returns
-        -------
-        equation : sympy expression
+        =======
+
+        equation : SymPy expression
 
         Examples
-        --------
+        ========
+
         >>> from sympy import Point, Circle
         >>> c1 = Circle(Point(0, 0), 5)
         >>> c1.equation()
@@ -1019,23 +1399,26 @@ class Circle(Ellipse):
         """
         x = _symbol(x)
         y = _symbol(y)
-        t1 = (x - self.center[0])**2
-        t2 = (y - self.center[1])**2
+        t1 = (x - self.center.x)**2
+        t2 = (y - self.center.y)**2
         return t1 + t2 - self.major**2
 
     def intersection(self, o):
         """The intersection of this circle with another geometrical entity.
 
         Parameters
-        ----------
+        ==========
+
         o : GeometryEntity
 
         Returns
-        -------
+        =======
+
         intersection : list of GeometryEntities
 
         Examples
-        --------
+        ========
+
         >>> from sympy import Point, Circle, Line, Ray
         >>> p1, p2, p3 = Point(0, 0), Point(5, 5), Point(6, 0)
         >>> p4 = Point(5, 0)
@@ -1055,7 +1438,7 @@ class Circle(Ellipse):
                 if o.radius == self.radius:
                     return o
                 return []
-            dx,dy = o.center - self.center
+            dx, dy = (o.center - self.center).args
             d = sqrt(simplify(dy**2 + dx**2))
             R = o.radius + self.radius
             if d > R or d < abs(self.radius - o.radius):
@@ -1063,8 +1446,8 @@ class Circle(Ellipse):
 
             a = simplify((self.radius**2 - o.radius**2 + d**2) / (2*d))
 
-            x2 = self.center[0] + (dx * a/d)
-            y2 = self.center[1] + (dy * a/d)
+            x2 = self.center.x + (dx * a/d)
+            y2 = self.center.y + (dy * a/d)
 
             h = sqrt(simplify(self.radius**2 - a**2))
             rx = -dy * (h/d)
@@ -1082,4 +1465,44 @@ class Circle(Ellipse):
 
         return Ellipse.intersection(self, o)
 
-from polygon import Polygon
+    def scale(self, x=1, y=1, pt=None):
+        """Override GeometryEntity.scale since the radius
+        is not a GeometryEntity.
+
+        Examples
+        ========
+
+        >>> from sympy import Circle
+        >>> Circle((0, 0), 1).scale(2, 2)
+        Circle(Point(0, 0), 2)
+        >>> Circle((0, 0), 1).scale(2, 4)
+        Ellipse(Point(0, 0), 2, 4)
+        """
+        c = self.center
+        if pt:
+            pt = Point(pt)
+            return self.translate(*(-pt).args).scale(x, y).translate(*pt.args)
+        c = c.scale(x, y)
+        x, y = [abs(i) for i in (x, y)]
+        if x == y:
+            return self.func(c, x*self.radius)
+        h = v = self.radius
+        return Ellipse(c, hradius=h*x, vradius=v*y)
+
+    def reflect(self, line):
+        """Override GeometryEntity.reflect since the radius
+        is not a GeometryEntity.
+
+        Examples
+        ========
+
+        >>> from sympy import Circle, Line
+        >>> Circle((0, 1), 1).reflect(Line((0, 0), (1, 1)))
+        Circle(Point(1, 0), -1)
+        """
+        c = self.center
+        c = c.reflect(line)
+        return self.func(c, -self.radius)
+
+
+from .polygon import Polygon
